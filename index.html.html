@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SKU WISE SALES Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:#1a1a2e;color:#eee;padding:12px;min-height:100vh}
+h1{text-align:center;color:#39ff14;font-size:20px;margin-bottom:4px;letter-spacing:1px}
+.sub{text-align:center;color:#666;font-size:11px;margin-bottom:12px}
+.loading{text-align:center;padding:80px;color:#4fc3f7;font-size:18px}
+.spin{display:inline-block;width:30px;height:30px;border:3px solid #333;border-top:3px solid #4fc3f7;border-radius:50%;animation:sp .8s linear infinite;margin-bottom:10px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* Cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:12px}
+.cd{background:#16213e;border-radius:10px;padding:10px;text-align:center;border-left:4px solid #4fc3f7;transition:.2s}
+.cd:hover{transform:translateY(-2px);box-shadow:0 4px 15px rgba(0,0,0,.3)}
+.cd.g{border-left-color:#39ff14}.cd.o{border-left-color:#e09f3e}.cd.r{border-left-color:#dc2f02}.cd.p{border-left-color:#a855f7}
+.cd .lb{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px}
+.cd .vl{font-size:20px;font-weight:700;color:#fff}
+
+/* Filters */
+.fbox{background:#16213e;border-radius:10px;padding:12px;margin-bottom:12px}
+.fbox h3{color:#4fc3f7;font-size:12px;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+.frow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.frow select{background:#0f1a2e;color:#eee;border:1px solid #333;border-radius:6px;padding:6px 10px;font-size:12px;min-width:130px}
+.frow select:focus{border-color:#4fc3f7;outline:none}
+.fbtn{background:#39ff14;color:#1a1a2e;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer}
+.fbtn:hover{background:#2ed810}
+.fbtn.ref{background:#e09f3e}.fbtn.ref:hover{background:#c88a2e}
+.fbtn.clr{background:#dc2f02}.fbtn.clr:hover{background:#b02602}
+
+/* Charts */
+.chs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.chb{background:#16213e;border-radius:10px;padding:12px}
+.chb h3{color:#4fc3f7;font-size:11px;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+.chb canvas{max-height:240px}
+
+/* Table */
+.tbox{background:#16213e;border-radius:10px;padding:12px;margin-bottom:12px}
+.tbox h3{color:#4fc3f7;font-size:12px;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;display:flex;justify-content:space-between;align-items:center}
+.tbox h3 span{color:#888;font-size:11px;font-weight:400}
+.twrap{overflow-x:auto;max-height:500px;overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:11px;white-space:nowrap}
+th{background:#0f3460;color:#4fc3f7;padding:6px 8px;text-align:left;position:sticky;top:0;z-index:2;cursor:default;user-select:none}
+th.sortable{cursor:pointer}
+th.sortable:hover{background:#1a4a80;color:#39ff14}
+th .arrow{margin-left:4px;font-size:10px;color:#39ff14}
+td{padding:5px 8px;border-bottom:1px solid #1a1a2e}
+tr:nth-child(even) td{background:#0f1a2e}
+tr:hover td{background:#1f2b47}
+.badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600}
+.bg{background:#39ff1422;color:#39ff14}
+.br{background:#dc2f0222;color:#dc2f02}
+
+/* Pagination */
+.pag{display:flex;justify-content:center;align-items:center;gap:8px;margin-top:10px}
+.pag button{background:#0f3460;color:#4fc3f7;border:1px solid #333;border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer}
+.pag button:hover{background:#1a4a80}
+.pag button:disabled{opacity:.3;cursor:default}
+.pag span{color:#888;font-size:12px}
+
+/* Search */
+.srch{background:#0f1a2e;color:#eee;border:1px solid #333;border-radius:6px;padding:6px 10px;font-size:12px;width:200px}
+.srch:focus{border-color:#4fc3f7;outline:none}
+
+.ft{text-align:center;color:#444;font-size:10px;margin-top:8px}
+@media(max-width:768px){.chs{grid-template-columns:1fr}.cards{grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}}
+</style>
+</head>
+<body>
+
+<h1>SKU WISE SALES DASHBOARD</h1>
+<div class="sub" id="info">Loading...</div>
+<div id="loader" class="loading"><div class="spin"></div><br>Loading dashboard data...<br><span style="font-size:13px;color:#888">This may take 15-20 seconds</span></div>
+<div id="app" style="display:none">
+
+<!-- Cards -->
+<div class="cards" id="cards"></div>
+
+<!-- Filters -->
+<div class="fbox">
+<h3>Filters</h3>
+<div class="frow">
+  <select id="fPlatform"><option value="">All Platforms</option></select>
+  <select id="fCompany"><option value="">All Companies</option></select>
+  <select id="fStock"><option value="">All Stock</option></select>
+  <select id="fActive"><option value="">All Status</option></select>
+  <input class="srch" id="searchBox" placeholder="Search anything..." oninput="applyAll()">
+  <button class="fbtn" onclick="applyAll()">Apply</button>
+  <button class="fbtn clr" onclick="clearFilters()">Clear</button>
+  <button class="fbtn ref" onclick="loadData()">Refresh</button>
+</div>
+</div>
+
+<!-- Charts -->
+<div class="chs">
+  <div class="chb"><h3>Sales by Period</h3><canvas id="ch1"></canvas></div>
+  <div class="chb"><h3>Stock Status</h3><canvas id="ch2"></canvas></div>
+</div>
+<div class="chs">
+  <div class="chb"><h3>Platform Wise 30-Day Sales</h3><canvas id="ch3"></canvas></div>
+  <div class="chb"><h3>Active / Inactive</h3><canvas id="ch4"></canvas></div>
+</div>
+
+<!-- Table -->
+<div class="tbox">
+<h3>All SKU Data <span id="tcount"></span></h3>
+<div class="twrap">
+  <table><thead><tr id="thead"></tr></thead><tbody id="tbody"></tbody></table>
+</div>
+<div class="pag">
+  <button id="prevBtn" onclick="changePage(-1)">&lt; Prev</button>
+  <span id="pageInfo">Page 1</span>
+  <button id="nextBtn" onclick="changePage(1)">Next &gt;</button>
+  <select id="ppSelect" onchange="changePageSize()" style="background:#0f1a2e;color:#eee;border:1px solid #333;border-radius:6px;padding:4px;font-size:11px">
+    <option value="50">50/page</option>
+    <option value="100" selected>100/page</option>
+    <option value="200">200/page</option>
+    <option value="500">500/page</option>
+  </select>
+</div>
+</div>
+
+<div class="ft" id="lastUp"></div>
+</div>
+
+<script>
+// ========================================================
+// PASTE YOUR DEPLOYED WEB APP URL HERE
+// ========================================================
+var API_URL = 'https://script.google.com/macros/s/AKfycby-O40MaoS8hea5zTGsb1eMtUWJt_e8TkNG0SDYa6kuvwou7ELAEnHGWXJTGJUDX8maUw/exec';
+// Example: 'https://script.google.com/macros/s/AKfycbw.../exec'
+// ========================================================
+
+var ALL_DATA=[], HEADERS=[], FILTERED=[], SORT_COL=-1, SORT_DIR=1, PAGE=0, PER_PAGE=100;
+var FILTER_COLS={platform:1,company:2,stock:12,active:13}; // 0-based column indexes
+var SORTABLE_FROM=15; // Columns P onwards are sortable (0-based index)
+var CHS={};
+
+function loadData(){
+  document.getElementById('loader').style.display='block';
+  document.getElementById('app').style.display='none';
+
+  fetch(API_URL, {redirect:'follow'})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d.error){ onErr(d.error); return; }
+      ALL_DATA = d.rows || [];
+      HEADERS = d.headers || [];
+      document.getElementById('loader').style.display='none';
+      document.getElementById('app').style.display='block';
+      populateFilters();
+      applyAll();
+      document.getElementById('lastUp').textContent='Updated: '+new Date().toLocaleString();
+      document.getElementById('info').textContent=ALL_DATA.length+' SKUs | '+HEADERS.length+' columns';
+    })
+    .catch(function(e){ onErr(e.message || 'Network error'); });
+}
+
+function onErr(msg){
+  document.getElementById('loader').innerHTML='<div style="color:#dc2f02">Error: '+msg+'</div>';
+}
+
+// ===== FILTERS =====
+function populateFilters(){
+  var sets={platform:{},company:{},stock:{},active:{}};
+  for(var i=0;i<ALL_DATA.length;i++){
+    var r=ALL_DATA[i];
+    var p=String(r[FILTER_COLS.platform]||'').trim();
+    var c=String(r[FILTER_COLS.company]||'').trim();
+    var s=String(r[FILTER_COLS.stock]||'').trim();
+    var a=String(r[FILTER_COLS.active]||'').trim();
+    if(p)sets.platform[p]=1;
+    if(c)sets.company[c]=1;
+    if(s)sets.stock[s]=1;
+    if(a)sets.active[a]=1;
+  }
+  fillSel('fPlatform',Object.keys(sets.platform).sort(),'All Platforms');
+  fillSel('fCompany',Object.keys(sets.company).sort(),'All Companies');
+  fillSel('fStock',Object.keys(sets.stock).sort(),'All Stock');
+  fillSel('fActive',Object.keys(sets.active).sort(),'All Status');
+}
+
+function fillSel(id,items,def){
+  var s=document.getElementById(id),v=s.value;
+  s.innerHTML='<option value="">'+def+'</option>';
+  for(var i=0;i<items.length;i++) s.innerHTML+='<option value="'+items[i]+'">'+items[i]+'</option>';
+  s.value=v;
+}
+
+function clearFilters(){
+  document.getElementById('fPlatform').value='';
+  document.getElementById('fCompany').value='';
+  document.getElementById('fStock').value='';
+  document.getElementById('fActive').value='';
+  document.getElementById('searchBox').value='';
+  SORT_COL=-1;SORT_DIR=1;
+  applyAll();
+}
+
+// ===== APPLY FILTERS + SORT =====
+function applyAll(){
+  var fp=document.getElementById('fPlatform').value.toUpperCase();
+  var fc=document.getElementById('fCompany').value.toUpperCase();
+  var fs=document.getElementById('fStock').value.toUpperCase();
+  var fa=document.getElementById('fActive').value.toUpperCase();
+  var sq=document.getElementById('searchBox').value.trim().toUpperCase();
+
+  FILTERED=[];
+  for(var i=0;i<ALL_DATA.length;i++){
+    var r=ALL_DATA[i];
+    if(fp && String(r[FILTER_COLS.platform]||'').trim().toUpperCase()!==fp) continue;
+    if(fc && String(r[FILTER_COLS.company]||'').trim().toUpperCase()!==fc) continue;
+    if(fs && String(r[FILTER_COLS.stock]||'').trim().toUpperCase()!==fs) continue;
+    if(fa && String(r[FILTER_COLS.active]||'').trim().toUpperCase()!==fa) continue;
+    if(sq){
+      var found=false;
+      for(var j=0;j<r.length;j++){if(String(r[j]||'').toUpperCase().indexOf(sq)>=0){found=true;break;}}
+      if(!found) continue;
+    }
+    FILTERED.push(r);
+  }
+
+  if(SORT_COL>=0){
+    FILTERED.sort(function(a,b){
+      var va=a[SORT_COL],vb=b[SORT_COL];
+      var na=parseFloat(va),nb=parseFloat(vb);
+      if(!isNaN(na)&&!isNaN(nb)) return (na-nb)*SORT_DIR;
+      va=String(va||'').toUpperCase();vb=String(vb||'').toUpperCase();
+      if(va<vb)return -1*SORT_DIR;if(va>vb)return 1*SORT_DIR;return 0;
+    });
+  }
+
+  PAGE=0;
+  renderCards();
+  renderCharts();
+  renderTable();
+}
+
+function sortBy(col){
+  if(SORT_COL===col){SORT_DIR*=-1;}
+  else{SORT_COL=col;SORT_DIR=1;}
+  applyAll();
+}
+
+// ===== CARDS =====
+function renderCards(){
+  var d=FILTERED,tdy=0,d3=0,d7=0,d15=0,d30=0,ins=0,oos=0,act=0,inact=0;
+  var ci=getSalesIndexes();
+  for(var i=0;i<d.length;i++){
+    var r=d[i];
+    tdy+=Number(r[ci.today])||0;
+    d3+=Number(r[ci.day3])||0;
+    d7+=Number(r[ci.day7])||0;
+    d15+=Number(r[ci.day15])||0;
+    d30+=Number(r[ci.day30])||0;
+    var st=String(r[FILTER_COLS.stock]||'').trim().toUpperCase();
+    var ac=String(r[FILTER_COLS.active]||'').trim().toUpperCase();
+    if(st==='IN STOCK')ins++;else oos++;
+    if(ac==='INACTIVE')inact++;else act++;
+  }
+  var h='';
+  h+=cd('Total SKUs',fmt(d.length),'');
+  h+=cd('Today Sales',fmt(tdy),'g');
+  h+=cd('3-Day Sales',fmt(d3),'g');
+  h+=cd('7-Day Sales',fmt(d7),'o');
+  h+=cd('15-Day Sales',fmt(d15),'o');
+  h+=cd('30-Day Sales',fmt(d30),'p');
+  h+=cd('In Stock',fmt(ins),'g');
+  h+=cd('Out of Stock',fmt(oos),'r');
+  h+=cd('Active',fmt(act),'g');
+  h+=cd('Inactive',fmt(inact),'r');
+  document.getElementById('cards').innerHTML=h;
+}
+
+function cd(l,v,c){return'<div class="cd '+c+'"><div class="lb">'+l+'</div><div class="vl">'+v+'</div></div>'}
+function fmt(n){return n==null?'0':Number(n).toLocaleString('en-IN')}
+
+function getSalesIndexes(){
+  var ci={today:-1,day3:-1,day7:-1,day15:-1,day30:-1};
+  for(var i=0;i<HEADERS.length;i++){
+    var h=String(HEADERS[i]||'').toUpperCase().trim();
+    if(h.indexOf('1 DAY')>=0||h.indexOf('TODAY')>=0)ci.today=i;
+    else if(h.indexOf('3 DAY')>=0)ci.day3=i;
+    else if(h.indexOf('7 DAY')>=0)ci.day7=i;
+    else if(h.indexOf('15 DAY')>=0)ci.day15=i;
+    else if(h.indexOf('30 DAY')>=0)ci.day30=i;
+  }
+  if(ci.today<0){var n=HEADERS.length;ci.today=n-5;ci.day3=n-4;ci.day7=n-3;ci.day15=n-2;ci.day30=n-1;}
+  return ci;
+}
+
+// ===== CHARTS =====
+function renderCharts(){
+  var ci=getSalesIndexes();
+  var tdy=0,d3=0,d7=0,d15=0,d30=0;
+  var platMap={},stockMap={},actCount=0,inactCount=0;
+  for(var i=0;i<FILTERED.length;i++){
+    var r=FILTERED[i];
+    tdy+=Number(r[ci.today])||0;d3+=Number(r[ci.day3])||0;d7+=Number(r[ci.day7])||0;d15+=Number(r[ci.day15])||0;d30+=Number(r[ci.day30])||0;
+    var pl=String(r[FILTER_COLS.platform]||'').trim();
+    var st=String(r[FILTER_COLS.stock]||'').trim();
+    var ac=String(r[FILTER_COLS.active]||'').trim().toUpperCase();
+    if(pl){if(!platMap[pl])platMap[pl]=0;platMap[pl]+=Number(r[ci.day30])||0;}
+    if(!stockMap[st])stockMap[st]=0;stockMap[st]++;
+    if(ac==='INACTIVE')inactCount++;else actCount++;
+  }
+
+  dc('ch1');CHS.ch1=new Chart(document.getElementById('ch1'),{type:'bar',data:{labels:['Today','3 Day','7 Day','15 Day','30 Day'],datasets:[{data:[tdy,d3,d7,d15,d30],backgroundColor:['#39ff14','#4fc3f7','#e09f3e','#a855f7','#dc2f02'],borderRadius:5}]},options:bOpts()});
+
+  var sl=[],sv=[],sc=['#39ff14','#dc2f02','#e09f3e','#4fc3f7','#a855f7'];
+  for(var k in stockMap){sl.push(k||'BLANK');sv.push(stockMap[k]);}
+  dc('ch2');CHS.ch2=new Chart(document.getElementById('ch2'),{type:'doughnut',data:{labels:sl,datasets:[{data:sv,backgroundColor:sc.slice(0,sl.length),borderWidth:0}]},options:pOpts()});
+
+  var platArr=[];for(var k in platMap)platArr.push({n:k,v:platMap[k]});
+  platArr.sort(function(a,b){return b.v-a.v});
+  var pl=[],pv=[],pc=['#4fc3f7','#39ff14','#e09f3e','#a855f7','#dc2f02','#f72585','#7209b7','#3a0ca3','#4361ee','#4cc9f0'];
+  for(var i=0;i<platArr.length;i++){pl.push(platArr[i].n);pv.push(platArr[i].v);}
+  dc('ch3');CHS.ch3=new Chart(document.getElementById('ch3'),{type:'bar',data:{labels:pl,datasets:[{data:pv,backgroundColor:pc.slice(0,pl.length),borderRadius:5}]},options:bOpts()});
+
+  dc('ch4');CHS.ch4=new Chart(document.getElementById('ch4'),{type:'doughnut',data:{labels:['Active','Inactive'],datasets:[{data:[actCount,inactCount],backgroundColor:['#39ff14','#dc2f02'],borderWidth:0}]},options:pOpts()});
+}
+
+function bOpts(){return{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#888',font:{size:10}},grid:{color:'#222'}},y:{ticks:{color:'#888',font:{size:10}},grid:{color:'#222'}}}}}
+function pOpts(){return{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#eee',padding:10,font:{size:10}}}}}}
+function dc(id){if(CHS[id]){CHS[id].destroy();CHS[id]=null;}}
+
+// ===== TABLE =====
+function renderTable(){
+  PER_PAGE=parseInt(document.getElementById('ppSelect').value)||100;
+  var th='';
+  for(var i=0;i<HEADERS.length;i++){
+    var isSortable=i>=SORTABLE_FROM;
+    var arrow='';
+    if(SORT_COL===i) arrow='<span class="arrow">'+(SORT_DIR===1?'▲':'▼')+'</span>';
+    if(isSortable){
+      th+='<th class="sortable" onclick="sortBy('+i+')">'+HEADERS[i]+arrow+'</th>';
+    }else{
+      th+='<th>'+HEADERS[i]+'</th>';
+    }
+  }
+  document.getElementById('thead').innerHTML=th;
+
+  var start=PAGE*PER_PAGE;
+  var end=Math.min(start+PER_PAGE,FILTERED.length);
+  var totalPages=Math.ceil(FILTERED.length/PER_PAGE)||1;
+  var tb='';
+  for(var i=start;i<end;i++){
+    var r=FILTERED[i];
+    tb+='<tr>';
+    for(var j=0;j<r.length;j++){
+      var val=r[j];
+      if(j===FILTER_COLS.stock){
+        var su=String(val||'').trim().toUpperCase();
+        val=su==='IN STOCK'?'<span class="badge bg">IN STOCK</span>':'<span class="badge br">'+val+'</span>';
+      }
+      if(j===FILTER_COLS.active){
+        var au=String(val||'').trim().toUpperCase();
+        val=au==='INACTIVE'?'<span class="badge br">INACTIVE</span>':'<span class="badge bg">'+val+'</span>';
+      }
+      tb+='<td>'+val+'</td>';
+    }
+    tb+='</tr>';
+  }
+  document.getElementById('tbody').innerHTML=tb||'<tr><td colspan="'+HEADERS.length+'" style="text-align:center;color:#888;padding:20px">No data found</td></tr>';
+  document.getElementById('tcount').textContent='Showing '+(FILTERED.length>0?(start+1):0)+'-'+end+' of '+FILTERED.length;
+  document.getElementById('pageInfo').textContent='Page '+(PAGE+1)+' of '+totalPages;
+  document.getElementById('prevBtn').disabled=PAGE===0;
+  document.getElementById('nextBtn').disabled=end>=FILTERED.length;
+}
+
+function changePage(dir){PAGE+=dir;renderTable();}
+function changePageSize(){PAGE=0;renderTable();}
+
+// ===== INIT =====
+loadData();
+</script>
+</body>
+</html>
