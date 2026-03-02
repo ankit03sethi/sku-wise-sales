@@ -169,7 +169,7 @@ td a:hover{text-decoration:underline;color:#39ff14}
 
 <!-- MAIN TABLE -->
 <div class="tbox">
-<h3>All SKU Data <span id="tcount"></span></h3>
+<h3>All SKU Data <span id="ttotal" style="color:#39ff14;font-size:13px;font-weight:700;margin-left:8px"></span> <span id="tcount"></span></h3>
 <div class="twrap">
   <table><thead><tr id="thead"></tr></thead><tbody id="tbody"></tbody></table>
 </div>
@@ -733,10 +733,10 @@ function applyAll(){
     for(var f=0;f<tf.length;f++){if(String(r[tf[f].col]||'').trim().toUpperCase()!==tf[f].val){pass=false;break;}}
     if(!pass)continue;
     // Active/Inactive special filter on column N (ACTIVE_COL)
-    // Active = any numeric value 0 or above (0 is Active). Inactive = blank or "INACTIVE" text
+    // Active = any numeric value 0 or above (0 is Active). Inactive = blank or "INACTIVE" text only
     if(aiFilter){
-      var av=String(r[ACTIVE_COL]||'').trim().toUpperCase();
-      var anum=parseFloat(r[ACTIVE_COL]);
+      var rawVal=r[ACTIVE_COL];
+      var av=(rawVal===0||rawVal==='0')?'0':String(rawVal||'').trim().toUpperCase();
       var isInactive=(av===''||av==='INACTIVE');
       if(aiFilter==='ACTIVE'){
         if(isInactive){pass=false;}
@@ -794,6 +794,7 @@ function renderTable(){
       else{ct=(val===null||val===undefined)?'':val;}
       tb+='<td'+cc+'>'+ct+'</td>';}tb+='</tr>';}
   document.getElementById('tbody').innerHTML=tb||'<tr><td colspan="'+HEADERS.length+'" style="text-align:center;color:#888;padding:20px">No data</td></tr>';
+  document.getElementById('ttotal').textContent='Total: '+fmt(FILTERED.length);
   document.getElementById('tcount').textContent='Showing '+(FILTERED.length>0?start+1:0)+'-'+end+' of '+FILTERED.length;
   document.getElementById('pageInfo').textContent='Page '+(PAGE+1)+' of '+tp;
   document.getElementById('prevBtn').disabled=PAGE===0;document.getElementById('nextBtn').disabled=end>=FILTERED.length;
