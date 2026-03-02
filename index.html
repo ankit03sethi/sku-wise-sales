@@ -25,8 +25,8 @@ h1{text-align:center;color:#39ff14;font-size:20px;margin-bottom:4px;letter-spaci
 /* Filters */
 .fbox{background:#16213e;border-radius:10px;padding:12px;margin-bottom:12px}
 .fbox h3{color:#4fc3f7;font-size:12px;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
-.frow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.frow select{background:#0f1a2e;color:#eee;border:1px solid #333;border-radius:6px;padding:6px 10px;font-size:12px;min-width:130px}
+.frow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.frow select{background:#0f1a2e;color:#eee;border:1px solid #333;border-radius:6px;padding:5px 8px;font-size:11px;min-width:110px;max-width:160px}
 .frow select:focus{border-color:#4fc3f7;outline:none}
 .fbtn{background:#39ff14;color:#1a1a2e;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer}
 .fbtn:hover{background:#2ed810}
@@ -55,6 +55,7 @@ tr:hover td{background:#1f2b47}
 .badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600}
 .bg{background:#39ff1422;color:#39ff14}
 .br{background:#dc2f0222;color:#dc2f02}
+.zero{color:#dc2f02;font-weight:700}
 
 /* Pagination */
 .pag{display:flex;justify-content:center;align-items:center;gap:8px;margin-top:10px}
@@ -81,14 +82,10 @@ tr:hover td{background:#1f2b47}
 <!-- Cards -->
 <div class="cards" id="cards"></div>
 
-<!-- Filters -->
+<!-- Filters - dynamically generated for every column -->
 <div class="fbox">
 <h3>Filters</h3>
-<div class="frow">
-  <select id="fPlatform"><option value="">All Platforms</option></select>
-  <select id="fCompany"><option value="">All Companies</option></select>
-  <select id="fStock"><option value="">All Stock</option></select>
-  <select id="fActive"><option value="">All Status</option></select>
+<div class="frow" id="filterRow">
   <input class="srch" id="searchBox" placeholder="Search anything..." oninput="applyAll()">
   <button class="fbtn" onclick="applyAll()">Apply</button>
   <button class="fbtn clr" onclick="clearFilters()">Clear</button>
@@ -130,93 +127,121 @@ tr:hover td{background:#1f2b47}
 
 <script>
 // ========================================================
-// PASTE YOUR DEPLOYED WEB APP URL HERE
-// ========================================================
 var API_URL = 'https://script.google.com/macros/s/AKfycby-O40MaoS8hea5zTGsb1eMtUWJt_e8TkNG0SDYa6kuvwou7ELAEnHGWXJTGJUDX8maUw/exec';
-// Example: 'https://script.google.com/macros/s/AKfycbw.../exec'
 // ========================================================
 
 var ALL_DATA=[], HEADERS=[], FILTERED=[], SORT_COL=-1, SORT_DIR=1, PAGE=0, PER_PAGE=100;
-var FILTER_COLS={platform:1,company:2,stock:12,active:13}; // 0-based column indexes
-var SORTABLE_FROM=15; // Columns P onwards are sortable (0-based index)
+var COL_FILTERS={}; // Dynamic filters: {colIndex: selectedValue}
+var STOCK_COL=12, ACTIVE_COL=13; // For badge styling (0-based)
+var SORTABLE_FROM=15;
 var CHS={};
 
 function loadData(){
   document.getElementById('loader').style.display='block';
   document.getElementById('app').style.display='none';
-
-  fetch(API_URL, {redirect:'follow'})
-    .then(function(r){ return r.json(); })
+  fetch(API_URL,{redirect:'follow'})
+    .then(function(r){return r.json()})
     .then(function(d){
-      if(d.error){ onErr(d.error); return; }
-      ALL_DATA = d.rows || [];
-      HEADERS = d.headers || [];
+      if(d.error){onErr(d.error);return;}
+      ALL_DATA=d.rows||[];
+      HEADERS=d.headers||[];
       document.getElementById('loader').style.display='none';
       document.getElementById('app').style.display='block';
-      populateFilters();
+      buildColumnFilters();
       applyAll();
       document.getElementById('lastUp').textContent='Updated: '+new Date().toLocaleString();
       document.getElementById('info').textContent=ALL_DATA.length+' SKUs | '+HEADERS.length+' columns';
     })
-    .catch(function(e){ onErr(e.message || 'Network error'); });
+    .catch(function(e){onErr(e.message||'Network error')});
 }
 
-function onErr(msg){
-  document.getElementById('loader').innerHTML='<div style="color:#dc2f02">Error: '+msg+'</div>';
-}
+function onErr(msg){document.getElementById('loader').innerHTML='<div style="color:#dc2f02">Error: '+msg+'</div>';}
 
-// ===== FILTERS =====
-function populateFilters(){
-  var sets={platform:{},company:{},stock:{},active:{}};
-  for(var i=0;i<ALL_DATA.length;i++){
-    var r=ALL_DATA[i];
-    var p=String(r[FILTER_COLS.platform]||'').trim();
-    var c=String(r[FILTER_COLS.company]||'').trim();
-    var s=String(r[FILTER_COLS.stock]||'').trim();
-    var a=String(r[FILTER_COLS.active]||'').trim();
-    if(p)sets.platform[p]=1;
-    if(c)sets.company[c]=1;
-    if(s)sets.stock[s]=1;
-    if(a)sets.active[a]=1;
+// ===== BUILD FILTERS FOR EVERY COLUMN =====
+function buildColumnFilters(){
+  // Collect unique values per column (only for text columns, skip blank headers)
+  var colSets=[];
+  for(var c=0;c<HEADERS.length;c++){
+    var hdr=String(HEADERS[c]||'').trim();
+    if(!hdr){colSets.push(null);continue;}
+    // Check if column is mostly numeric (skip filter for numeric columns)
+    var isNumeric=true;
+    var vals={};
+    var uniqueCount=0;
+    for(var r=0;r<ALL_DATA.length&&r<1000;r++){
+      var v=String(ALL_DATA[r][c]||'').trim();
+      if(v===''||v==='0') continue;
+      if(isNaN(Number(v))) isNumeric=false;
+      if(!vals[v]){vals[v]=1;uniqueCount++;}
+    }
+    // Only create dropdown if not purely numeric OR has few unique values (like stock/active)
+    if(isNumeric && uniqueCount>20){colSets.push(null);continue;}
+    if(uniqueCount>200){colSets.push(null);continue;} // Too many unique values = skip dropdown
+    // Collect all unique values
+    var allVals={};
+    for(var r=0;r<ALL_DATA.length;r++){
+      var v=String(ALL_DATA[r][c]||'').trim();
+      if(v) allVals[v]=1;
+    }
+    colSets.push(Object.keys(allVals).sort());
   }
-  fillSel('fPlatform',Object.keys(sets.platform).sort(),'All Platforms');
-  fillSel('fCompany',Object.keys(sets.company).sort(),'All Companies');
-  fillSel('fStock',Object.keys(sets.stock).sort(),'All Stock');
-  fillSel('fActive',Object.keys(sets.active).sort(),'All Status');
-}
 
-function fillSel(id,items,def){
-  var s=document.getElementById(id),v=s.value;
-  s.innerHTML='<option value="">'+def+'</option>';
-  for(var i=0;i<items.length;i++) s.innerHTML+='<option value="'+items[i]+'">'+items[i]+'</option>';
-  s.value=v;
+  // Build filter dropdowns
+  var frow=document.getElementById('filterRow');
+  // Remove old column filters (keep search + buttons)
+  var oldFilters=frow.querySelectorAll('.col-filter');
+  for(var i=0;i<oldFilters.length;i++) frow.removeChild(oldFilters[i]);
+
+  // Insert before search box
+  var searchBox=document.getElementById('searchBox');
+  for(var c=0;c<colSets.length;c++){
+    if(!colSets[c]) continue;
+    var sel=document.createElement('select');
+    sel.className='col-filter';
+    sel.setAttribute('data-col',c);
+    sel.style.cssText='background:#0f1a2e;color:#eee;border:1px solid #333;border-radius:6px;padding:5px 8px;font-size:11px;min-width:110px;max-width:160px';
+    var hdr=HEADERS[c]||('Col '+c);
+    sel.innerHTML='<option value="">All '+hdr+'</option>';
+    var items=colSets[c];
+    for(var i=0;i<items.length;i++){
+      sel.innerHTML+='<option value="'+items[i].replace(/"/g,'&quot;')+'">'+items[i]+'</option>';
+    }
+    sel.onchange=applyAll;
+    frow.insertBefore(sel,searchBox);
+  }
 }
 
 function clearFilters(){
-  document.getElementById('fPlatform').value='';
-  document.getElementById('fCompany').value='';
-  document.getElementById('fStock').value='';
-  document.getElementById('fActive').value='';
+  var sels=document.querySelectorAll('.col-filter');
+  for(var i=0;i<sels.length;i++) sels[i].value='';
   document.getElementById('searchBox').value='';
   SORT_COL=-1;SORT_DIR=1;
   applyAll();
 }
 
-// ===== APPLY FILTERS + SORT =====
+// ===== APPLY ALL FILTERS + SORT =====
 function applyAll(){
-  var fp=document.getElementById('fPlatform').value.toUpperCase();
-  var fc=document.getElementById('fCompany').value.toUpperCase();
-  var fs=document.getElementById('fStock').value.toUpperCase();
-  var fa=document.getElementById('fActive').value.toUpperCase();
+  // Gather active column filters
+  var activeFilters=[];
+  var sels=document.querySelectorAll('.col-filter');
+  for(var i=0;i<sels.length;i++){
+    var val=sels[i].value;
+    if(val){
+      activeFilters.push({col:parseInt(sels[i].getAttribute('data-col')),val:val.toUpperCase()});
+    }
+  }
   var sq=document.getElementById('searchBox').value.trim().toUpperCase();
 
   FILTERED=[];
   for(var i=0;i<ALL_DATA.length;i++){
     var r=ALL_DATA[i];
-    if(fp && String(r[FILTER_COLS.platform]||'').trim().toUpperCase()!==fp) continue;
-    if(fc && String(r[FILTER_COLS.company]||'').trim().toUpperCase()!==fc) continue;
-    if(fs && String(r[FILTER_COLS.stock]||'').trim().toUpperCase()!==fs) continue;
-    if(fa && String(r[FILTER_COLS.active]||'').trim().toUpperCase()!==fa) continue;
+    var pass=true;
+    // Check all column filters
+    for(var f=0;f<activeFilters.length;f++){
+      if(String(r[activeFilters[f].col]||'').trim().toUpperCase()!==activeFilters[f].val){pass=false;break;}
+    }
+    if(!pass) continue;
+    // Search
     if(sq){
       var found=false;
       for(var j=0;j<r.length;j++){if(String(r[j]||'').toUpperCase().indexOf(sq)>=0){found=true;break;}}
@@ -258,8 +283,8 @@ function renderCards(){
     d7+=Number(r[ci.day7])||0;
     d15+=Number(r[ci.day15])||0;
     d30+=Number(r[ci.day30])||0;
-    var st=String(r[FILTER_COLS.stock]||'').trim().toUpperCase();
-    var ac=String(r[FILTER_COLS.active]||'').trim().toUpperCase();
+    var st=String(r[STOCK_COL]||'').trim().toUpperCase();
+    var ac=String(r[ACTIVE_COL]||'').trim().toUpperCase();
     if(st==='IN STOCK')ins++;else oos++;
     if(ac==='INACTIVE')inact++;else act++;
   }
@@ -302,9 +327,9 @@ function renderCharts(){
   for(var i=0;i<FILTERED.length;i++){
     var r=FILTERED[i];
     tdy+=Number(r[ci.today])||0;d3+=Number(r[ci.day3])||0;d7+=Number(r[ci.day7])||0;d15+=Number(r[ci.day15])||0;d30+=Number(r[ci.day30])||0;
-    var pl=String(r[FILTER_COLS.platform]||'').trim();
-    var st=String(r[FILTER_COLS.stock]||'').trim();
-    var ac=String(r[FILTER_COLS.active]||'').trim().toUpperCase();
+    var pl=String(r[1]||'').trim(); // Platform = col B = index 1
+    var st=String(r[STOCK_COL]||'').trim();
+    var ac=String(r[ACTIVE_COL]||'').trim().toUpperCase();
     if(pl){if(!platMap[pl])platMap[pl]=0;platMap[pl]+=Number(r[ci.day30])||0;}
     if(!stockMap[st])stockMap[st]=0;stockMap[st]++;
     if(ac==='INACTIVE')inactCount++;else actCount++;
@@ -354,15 +379,28 @@ function renderTable(){
     tb+='<tr>';
     for(var j=0;j<r.length;j++){
       var val=r[j];
-      if(j===FILTER_COLS.stock){
+      var cellStyle='';
+
+      // Badge for Stock column
+      if(j===STOCK_COL){
         var su=String(val||'').trim().toUpperCase();
         val=su==='IN STOCK'?'<span class="badge bg">IN STOCK</span>':'<span class="badge br">'+val+'</span>';
       }
-      if(j===FILTER_COLS.active){
+      // Badge for Active column
+      else if(j===ACTIVE_COL){
         var au=String(val||'').trim().toUpperCase();
         val=au==='INACTIVE'?'<span class="badge br">INACTIVE</span>':'<span class="badge bg">'+val+'</span>';
       }
-      tb+='<td>'+val+'</td>';
+      // Red color for 0 values
+      else if(val===0||val==='0'||val===''){
+        var isNumCol=j>=SORTABLE_FROM; // Numeric columns from P onwards
+        if(isNumCol){
+          val=(val===''||val===null||val===undefined)?'0':'0';
+          cellStyle=' class="zero"';
+        }
+      }
+
+      tb+='<td'+cellStyle+'>'+val+'</td>';
     }
     tb+='</tr>';
   }
