@@ -127,15 +127,14 @@ var STOCK_COL=12,ACTIVE_COL=13;
 var SORTABLE_FROM=15;
 var CHS={};
 var RATING_COLS=[];
-var NUMERIC_COLS=[]; // columns that are numeric (for low-high/high-low filters)
+var NUMERIC_COLS=[];
 
-// ===== LOAD DATA (same method as scanner project) =====
+// ===== LOAD DATA =====
 function loadData(){
   document.getElementById('loader').style.display='block';
   document.getElementById('app').style.display='none';
   document.getElementById('loader').innerHTML='<div class="spin"></div><br>Loading dashboard data...<br><span style="font-size:13px;color:#888">37,000+ SKUs — may take 30-60 seconds</span>';
 
-  // Add a 60-second timeout
   var controller = new AbortController();
   var timeoutId = setTimeout(function(){ controller.abort(); }, 60000);
 
@@ -154,7 +153,6 @@ function loadData(){
         onErr('Empty response from API.<br><br>Make sure your Apps Script is deployed as:<br>• Execute as: <b>Me</b><br>• Who has access: <b>Anyone</b><br><br><a href="'+API_URL+'" target="_blank" style="color:#4fc3f7">Click here to test API directly</a>');
         return;
       }
-      // Check if response is HTML (login page) instead of JSON
       if(text.trim().charAt(0) === '<'){
         onErr('API returned HTML instead of JSON. This usually means:<br>• Apps Script is not deployed as web app<br>• Access is restricted (not set to "Anyone")<br><br>Response preview: <code>'+text.substring(0,150)+'</code><br><br><a href="'+API_URL+'" target="_blank" style="color:#4fc3f7">Click here to test API directly</a>');
         return;
@@ -191,7 +189,6 @@ function onDataLoaded(d){
 
 function onErr(msg){document.getElementById('loader').innerHTML='<div style="color:#dc2f02;font-size:14px">'+msg+'</div>';}
 
-// Detect rating columns
 function detectRatingCols(){
   RATING_COLS=[];
   for(var i=0;i<HEADERS.length;i++){
@@ -200,7 +197,6 @@ function detectRatingCols(){
   }
 }
 
-// Detect numeric columns (for low-high/high-low sort)
 function detectNumericCols(){
   NUMERIC_COLS=[];
   for(var c=0;c<HEADERS.length;c++){
@@ -221,10 +217,7 @@ function buildColumnFilters(){
   for(var c=0;c<HEADERS.length;c++){
     var hdr=String(HEADERS[c]||'').trim();
     if(!hdr){colSets.push(null);continue;}
-
-    // If numeric column → will get sort options instead of value dropdown
     if(NUMERIC_COLS.indexOf(c)>=0){colSets.push('NUMERIC');continue;}
-
     var vals={};
     var uniqueCount=0;
     for(var r=0;r<ALL_DATA.length;r++){
@@ -249,13 +242,11 @@ function buildColumnFilters(){
     var hdr=String(HEADERS[c]||'').trim().toUpperCase();
 
     if(colSets[c]==='NUMERIC'){
-      // Numeric column: Low→High / High→Low sort options
       sel.setAttribute('data-type','numeric');
       sel.innerHTML='<option value="">'+hdr+'</option>';
       sel.innerHTML+='<option value="low-high">Low → High</option>';
       sel.innerHTML+='<option value="high-low">High → Low</option>';
     }else{
-      // Text column: value dropdown
       sel.setAttribute('data-type','text');
       sel.innerHTML='<option value="">'+hdr+'</option>';
       var items=colSets[c];
@@ -279,7 +270,7 @@ function clearFilters(){
 // ===== APPLY ALL FILTERS + SORT =====
 function applyAll(){
   var textFilters=[];
-  var numSort=null; // {col, dir} from numeric dropdown
+  var numSort=null;
   var sels=document.querySelectorAll('.col-filter');
   for(var i=0;i<sels.length;i++){
     var val=sels[i].value;
@@ -287,10 +278,8 @@ function applyAll(){
     var col=parseInt(sels[i].getAttribute('data-col'));
     var type=sels[i].getAttribute('data-type');
     if(type==='numeric'){
-      // Numeric sort
       numSort={col:col,dir:val==='low-high'?1:-1};
     }else{
-      // Text filter
       textFilters.push({col:col,val:val.toUpperCase()});
     }
   }
@@ -312,7 +301,6 @@ function applyAll(){
     FILTERED.push(r);
   }
 
-  // Apply numeric dropdown sort (takes priority over header click sort)
   if(numSort){
     SORT_COL=numSort.col;
     SORT_DIR=numSort.dir;
@@ -414,4 +402,117 @@ function renderCharts(){
   var platArr=[];for(var k in platMap)platArr.push({n:k,v:platMap[k]});
   platArr.sort(function(a,b){return b.v-a.v});
   var pl=[],pv=[],pc=['#4fc3f7','#39ff14','#e09f3e','#a855f7','#dc2f02','#f72585','#7209b7','#3a0ca3','#4361ee','#4cc9f0'];
-  for(var i=0;i<platArr.length;i++){pl
+  for(var i=0;i<platArr.length;i++){pl.push(platArr[i].n);pv.push(platArr[i].v);}
+  dc('ch3');CHS.ch3=new Chart(document.getElementById('ch3'),{type:'bar',data:{labels:pl,datasets:[{data:pv,backgroundColor:pc.slice(0,pl.length),borderRadius:5}]},options:bOpts()});
+
+  dc('ch4');CHS.ch4=new Chart(document.getElementById('ch4'),{type:'doughnut',data:{labels:['Active','Inactive'],datasets:[{data:[actCount,inactCount],backgroundColor:['#39ff14','#dc2f02'],borderWidth:0}]},options:pOpts()});
+}
+
+function bOpts(){return{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#888',font:{size:10}},grid:{color:'#222'}},y:{ticks:{color:'#888',font:{size:10}},grid:{color:'#222'}}}}}
+function pOpts(){return{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#eee',padding:10,font:{size:10}}}}}}
+function dc(id){if(CHS[id]){CHS[id].destroy();CHS[id]=null;}}
+
+// ===== URL DETECTION =====
+function isUrl(v){var s=String(v||'').trim();return s.indexOf('http://')===0||s.indexOf('https://')===0||s.indexOf('www.')===0;}
+function makeLink(v){
+  var s=String(v||'').trim();
+  var href=s;if(s.indexOf('www.')===0)href='https://'+s;
+  var display=s.replace(/^https?:\/\//,'').replace(/^www\./,'');
+  if(display.length>30)display=display.substring(0,30)+'...';
+  return'<a href="'+href+'" target="_blank" rel="noopener">'+display+'</a>';
+}
+
+// ===== RED VALUE CHECK =====
+function isRedValue(val,colIdx){
+  var num=parseFloat(val);
+  if(colIdx>=SORTABLE_FROM){
+    if(val===0||val==='0'||val===''||val===null||val===undefined)return true;
+  }
+  if(RATING_COLS.indexOf(colIdx)>=0){
+    if(!isNaN(num)&&num<3.5&&num>=0)return true;
+  }
+  return false;
+}
+
+// ===== TABLE =====
+function renderTable(){
+  PER_PAGE=parseInt(document.getElementById('ppSelect').value)||100;
+  var th='';
+  for(var i=0;i<HEADERS.length;i++){
+    var isSortable=i>=SORTABLE_FROM;
+    var arrow='';
+    if(SORT_COL===i)arrow='<span class="arrow">'+(SORT_DIR===1?'\u25B2':'\u25BC')+'</span>';
+    if(isSortable){th+='<th class="sortable" onclick="sortBy('+i+')">'+HEADERS[i]+arrow+'</th>';}
+    else{th+='<th>'+HEADERS[i]+'</th>';}
+  }
+  document.getElementById('thead').innerHTML=th;
+
+  var start=PAGE*PER_PAGE;
+  var end=Math.min(start+PER_PAGE,FILTERED.length);
+  var totalPages=Math.ceil(FILTERED.length/PER_PAGE)||1;
+  var tb='';
+  for(var i=start;i<end;i++){
+    var r=FILTERED[i];
+    tb+='<tr>';
+    for(var j=0;j<r.length;j++){
+      var val=r[j];
+      var cellClass='';
+      var cellContent='';
+
+      if(j===STOCK_COL){
+        var su=String(val||'').trim().toUpperCase();
+        cellContent=su==='IN STOCK'?'<span class="badge bg">IN STOCK</span>':'<span class="badge br">'+val+'</span>';
+      }else if(j===ACTIVE_COL){
+        var au=String(val||'').trim().toUpperCase();
+        cellContent=au==='INACTIVE'?'<span class="badge br">INACTIVE</span>':'<span class="badge bg">'+val+'</span>';
+      }else if(isUrl(val)){
+        cellContent=makeLink(val);
+      }else if(isRedValue(val,j)){
+        cellClass=' class="zero"';
+        cellContent=(val===''||val===null||val===undefined)?'0':val;
+      }else{
+        cellContent=(val===null||val===undefined)?'':val;
+      }
+
+      tb+='<td'+cellClass+'>'+cellContent+'</td>';
+    }
+    tb+='</tr>';
+  }
+  document.getElementById('tbody').innerHTML=tb||'<tr><td colspan="'+HEADERS.length+'" style="text-align:center;color:#888;padding:20px">No data found</td></tr>';
+  document.getElementById('tcount').textContent='Showing '+(FILTERED.length>0?(start+1):0)+'-'+end+' of '+FILTERED.length;
+  document.getElementById('pageInfo').textContent='Page '+(PAGE+1)+' of '+totalPages;
+  document.getElementById('prevBtn').disabled=PAGE===0;
+  document.getElementById('nextBtn').disabled=end>=FILTERED.length;
+}
+
+function changePage(dir){PAGE+=dir;renderTable();}
+function changePageSize(){PAGE=0;renderTable();}
+
+// ===== DOWNLOAD CSV =====
+function downloadCSV(){
+  if(!FILTERED.length){alert('No data to download!');return;}
+  var csv=[];
+  var hdrRow=[];
+  for(var i=0;i<HEADERS.length;i++) hdrRow.push('"'+String(HEADERS[i]||'').replace(/"/g,'""')+'"');
+  csv.push(hdrRow.join(','));
+  for(var r=0;r<FILTERED.length;r++){
+    var row=[];
+    for(var c=0;c<FILTERED[r].length;c++){
+      var val=String(FILTERED[r][c]===null||FILTERED[r][c]===undefined?'':FILTERED[r][c]);
+      row.push('"'+val.replace(/"/g,'""')+'"');
+    }
+    csv.push(row.join(','));
+  }
+  var blob=new Blob([csv.join('\n')],{type:'text/csv;charset=utf-8;'});
+  var link=document.createElement('a');
+  link.href=URL.createObjectURL(blob);
+  link.download='SKU_WISE_SALES_'+new Date().toISOString().slice(0,10)+'.csv';
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+// ===== INIT =====
+loadData();
+</script>
+</body>
+</html>
