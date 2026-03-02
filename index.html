@@ -13,14 +13,12 @@ h1{text-align:center;color:#39ff14;font-size:20px;margin-bottom:4px;letter-spaci
 .loading{text-align:center;padding:80px;color:#4fc3f7;font-size:18px}
 .spin{display:inline-block;width:30px;height:30px;border:3px solid #333;border-top:3px solid #4fc3f7;border-radius:50%;animation:sp .8s linear infinite;margin-bottom:10px}
 @keyframes sp{to{transform:rotate(360deg)}}
-
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:12px}
 .cd{background:#16213e;border-radius:10px;padding:10px;text-align:center;border-left:4px solid #4fc3f7;transition:.2s}
 .cd:hover{transform:translateY(-2px);box-shadow:0 4px 15px rgba(0,0,0,.3)}
 .cd.g{border-left-color:#39ff14}.cd.o{border-left-color:#e09f3e}.cd.r{border-left-color:#dc2f02}.cd.p{border-left-color:#a855f7}
 .cd .lb{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px}
 .cd .vl{font-size:20px;font-weight:700;color:#fff}
-
 .fbox{background:#16213e;border-radius:10px;padding:12px;margin-bottom:12px}
 .fbox h3{color:#4fc3f7;font-size:12px;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
 .frow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
@@ -31,17 +29,14 @@ h1{text-align:center;color:#39ff14;font-size:20px;margin-bottom:4px;letter-spaci
 .fbtn.ref{background:#e09f3e}.fbtn.ref:hover{background:#c88a2e}
 .fbtn.clr{background:#dc2f02}.fbtn.clr:hover{background:#b02602}
 .fbtn.dl{background:#4fc3f7}.fbtn.dl:hover{background:#3ab0e0}
-
 .chs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
 .chb{background:#16213e;border-radius:10px;padding:12px}
 .chb h3{color:#4fc3f7;font-size:11px;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
 .chb canvas{max-height:240px}
-
-.tbox{background:#16213e;border-radius:10px;padding:12px;margin-bottom:12px}
+.tbox{background:#16213e;border-radius:10px;padding:12px;margin-bottom:12px;position:relative}
 .tbox h3{color:#4fc3f7;font-size:12px;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;display:flex;justify-content:space-between;align-items:center}
 .tbox h3 span{color:#888;font-size:11px;font-weight:400}
-.tbox{position:relative}
-.twrap{overflow-x:auto;overflow-y:auto;max-height:500px;-webkit-overflow-scrolling:touch;width:100%}
+.twrap{overflow-x:auto;overflow-y:auto;max-height:500px;width:100%}
 table{border-collapse:collapse;font-size:11px;white-space:nowrap;min-width:100%}
 th{background:#0f3460;color:#4fc3f7;padding:6px 8px;text-align:left;position:sticky;top:0;z-index:2;cursor:default;user-select:none}
 th.sortable{cursor:pointer}
@@ -56,30 +51,24 @@ tr:hover td{background:#1f2b47}
 .zero{color:#dc2f02;font-weight:700}
 td a{color:#4fc3f7;text-decoration:none}
 td a:hover{text-decoration:underline;color:#39ff14}
-
 .pag{display:flex;justify-content:center;align-items:center;gap:8px;margin-top:10px}
 .pag button{background:#0f3460;color:#4fc3f7;border:1px solid #333;border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer}
 .pag button:hover{background:#1a4a80}
 .pag button:disabled{opacity:.3;cursor:default}
 .pag span{color:#888;font-size:12px}
-
 .srch{background:#0f1a2e;color:#eee;border:1px solid #333;border-radius:6px;padding:6px 10px;font-size:12px;width:200px}
 .srch:focus{border-color:#4fc3f7;outline:none}
-
 .ft{text-align:center;color:#444;font-size:10px;margin-top:8px}
 @media(max-width:768px){.chs{grid-template-columns:1fr}.cards{grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}}
 </style>
 </head>
 <body>
-
 <h1>SKU WISE SALES DASHBOARD</h1>
 <div class="sub" id="info">Loading...</div>
 <div id="loader" class="loading"><div class="spin"></div><br>Loading dashboard data...<br><span style="font-size:13px;color:#888">This may take 15-20 seconds</span></div>
 <div id="app" style="display:none">
-
 <div class="cards" id="salesCards"></div>
 <div class="cards" id="stockCards"></div>
-
 <div class="fbox">
 <h3>Filters</h3>
 <div class="frow" id="filterRow">
@@ -90,7 +79,6 @@ td a:hover{text-decoration:underline;color:#39ff14}
   <button class="fbtn dl" onclick="downloadCSV()">Download CSV</button>
 </div>
 </div>
-
 <div class="chs">
   <div class="chb"><h3>Sales by Period</h3><canvas id="ch1"></canvas></div>
   <div class="chb"><h3>Stock Status</h3><canvas id="ch2"></canvas></div>
@@ -99,7 +87,6 @@ td a:hover{text-decoration:underline;color:#39ff14}
   <div class="chb"><h3>Platform Wise 30-Day Sales</h3><canvas id="ch3"></canvas></div>
   <div class="chb"><h3>Active / Inactive</h3><canvas id="ch4"></canvas></div>
 </div>
-
 <div class="tbox">
 <h3>All SKU Data <span id="tcount"></span></h3>
 <div class="twrap">
@@ -117,64 +104,50 @@ td a:hover{text-decoration:underline;color:#39ff14}
   </select>
 </div>
 </div>
-
 <div class="ft" id="lastUp"></div>
 </div>
-
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbwwILh7WaqCvWftUSvDwbcUHwyREoETo_7lxIlrSG3ZOE1QFtthlU-VvJLZLfH4inGZ0g/exec';
-
 var ALL_DATA=[],HEADERS=[],FILTERED=[],SORT_COL=-1,SORT_DIR=1,PAGE=0,PER_PAGE=100;
 var STOCK_COL=12,ACTIVE_COL=13;
 var SORTABLE_FROM=15;
 var CHS={};
 var RATING_COLS=[];
 var NUMERIC_COLS=[];
-
-// ===== LOAD DATA =====
 function loadData(){
   document.getElementById('loader').style.display='block';
   document.getElementById('app').style.display='none';
-  document.getElementById('loader').innerHTML='<div class="spin"></div><br>Loading dashboard data...<br><span style="font-size:13px;color:#888">37,000+ SKUs — may take 30-60 seconds</span>';
-
-  var controller = new AbortController();
-  var timeoutId = setTimeout(function(){ controller.abort(); }, 60000);
-
-  fetch(API_URL,{redirect:'follow', signal: controller.signal})
+  document.getElementById('loader').innerHTML='<div class="spin"></div><br>Loading dashboard data...<br><span style="font-size:13px;color:#888">37,000+ SKUs - may take 30-60 seconds</span>';
+  var controller=new AbortController();
+  var timeoutId=setTimeout(function(){controller.abort();},60000);
+  fetch(API_URL,{redirect:'follow',signal:controller.signal})
     .then(function(r){
       clearTimeout(timeoutId);
-      console.log('API Response status:', r.status, r.statusText);
-      console.log('API Response URL:', r.url);
-      if(!r.ok) throw new Error('HTTP ' + r.status + ' ' + r.statusText);
+      if(!r.ok) throw new Error('HTTP '+r.status+' '+r.statusText);
       return r.text();
     })
     .then(function(text){
-      console.log('Response length:', text.length, 'chars');
-      console.log('First 300 chars:', text.substring(0,300));
-      if(!text || text.trim().length === 0){
-        onErr('Empty response from API.<br><br>Make sure your Apps Script is deployed as:<br>• Execute as: <b>Me</b><br>• Who has access: <b>Anyone</b><br><br><a href="'+API_URL+'" target="_blank" style="color:#4fc3f7">Click here to test API directly</a>');
+      if(!text||text.trim().length===0){
+        onErr('Empty response from API.');
         return;
       }
-      if(text.trim().charAt(0) === '<'){
-        onErr('API returned HTML instead of JSON. This usually means:<br>• Apps Script is not deployed as web app<br>• Access is restricted (not set to "Anyone")<br><br>Response preview: <code>'+text.substring(0,150)+'</code><br><br><a href="'+API_URL+'" target="_blank" style="color:#4fc3f7">Click here to test API directly</a>');
+      if(text.trim().charAt(0)==='<'){
+        onErr('API returned HTML instead of JSON. Deploy Apps Script with access: Anyone');
         return;
       }
       try{
         var d=JSON.parse(text);
         onDataLoaded(d);
       }catch(e){
-        onErr('JSON parse error: '+e.message+'<br>Response length: '+text.length+' chars.<br>First 200: <code>'+text.substring(0,200)+'</code>');
+        onErr('JSON parse error: '+e.message);
       }
     })
     .catch(function(e){
       clearTimeout(timeoutId);
-      var msg = e.name === 'AbortError'
-        ? 'Request timed out after 60 seconds. The API is not responding.'
-        : 'Fetch failed: ' + e.message;
-      onErr(msg+'<br><br>Possible fixes:<br>• Check if Apps Script is deployed (Manage Deployments)<br>• Set access to "Anyone"<br>• Create a new deployment after code changes<br><br><a href="'+API_URL+'" target="_blank" style="color:#4fc3f7">Click here to test API directly</a>');
+      var msg=e.name==='AbortError'?'Request timed out after 60 seconds.':'Fetch failed: '+e.message;
+      onErr(msg+'<br><br><a href="'+API_URL+'" target="_blank" style="color:#4fc3f7">Click here to test API directly</a>');
     });
 }
-
 function onDataLoaded(d){
   if(d.error){onErr(d.error);return;}
   ALL_DATA=d.rows||[];
@@ -188,9 +161,7 @@ function onDataLoaded(d){
   document.getElementById('lastUp').textContent='Updated: '+new Date().toLocaleString();
   document.getElementById('info').textContent='SKU WISE SALES';
 }
-
 function onErr(msg){document.getElementById('loader').innerHTML='<div style="color:#dc2f02;font-size:14px">'+msg+'</div>';}
-
 function detectRatingCols(){
   RATING_COLS=[];
   for(var i=0;i<HEADERS.length;i++){
@@ -198,7 +169,6 @@ function detectRatingCols(){
     if(h.indexOf('RATING')>=0||h.indexOf('STAR')>=0||h.indexOf('REVIEW')>=0) RATING_COLS.push(i);
   }
 }
-
 function detectNumericCols(){
   NUMERIC_COLS=[];
   for(var c=0;c<HEADERS.length;c++){
@@ -209,11 +179,9 @@ function detectNumericCols(){
       total++;
       if(!isNaN(Number(v))) numCount++;
     }
-    if(total>0 && numCount/total>0.7) NUMERIC_COLS.push(c);
+    if(total>0&&numCount/total>0.7) NUMERIC_COLS.push(c);
   }
 }
-
-// ===== BUILD FILTERS =====
 function buildColumnFilters(){
   var colSets=[];
   for(var c=0;c<HEADERS.length;c++){
@@ -229,11 +197,9 @@ function buildColumnFilters(){
     if(uniqueCount>200||uniqueCount<2){colSets.push(null);continue;}
     colSets.push(Object.keys(vals).sort());
   }
-
   var frow=document.getElementById('filterRow');
   var oldFilters=frow.querySelectorAll('.col-filter');
   for(var i=0;i<oldFilters.length;i++) frow.removeChild(oldFilters[i]);
-
   var searchBox=document.getElementById('searchBox');
   for(var c=0;c<colSets.length;c++){
     if(!colSets[c]) continue;
@@ -242,12 +208,9 @@ function buildColumnFilters(){
     sel.setAttribute('data-col',c);
     sel.style.cssText='background:#0f1a2e;color:#eee;border:1px solid #333;border-radius:6px;padding:5px 8px;font-size:11px;min-width:110px;max-width:160px';
     var hdr=String(HEADERS[c]||'').trim().toUpperCase();
-
     if(colSets[c]==='NUMERIC'){
       sel.setAttribute('data-type','numeric');
-      sel.innerHTML='<option value="">'+hdr+'</option>';
-      sel.innerHTML+='<option value="low-high">Low → High</option>';
-      sel.innerHTML+='<option value="high-low">High → Low</option>';
+      sel.innerHTML='<option value="">'+hdr+'</option><option value="low-high">Low to High</option><option value="high-low">High to Low</option>';
     }else{
       sel.setAttribute('data-type','text');
       sel.innerHTML='<option value="">'+hdr+'</option>';
@@ -260,7 +223,6 @@ function buildColumnFilters(){
     frow.insertBefore(sel,searchBox);
   }
 }
-
 function clearFilters(){
   var sels=document.querySelectorAll('.col-filter');
   for(var i=0;i<sels.length;i++) sels[i].value='';
@@ -268,8 +230,6 @@ function clearFilters(){
   SORT_COL=-1;SORT_DIR=1;
   applyAll();
 }
-
-// ===== APPLY ALL FILTERS + SORT =====
 function applyAll(){
   var textFilters=[];
   var numSort=null;
@@ -286,7 +246,6 @@ function applyAll(){
     }
   }
   var sq=document.getElementById('searchBox').value.trim().toUpperCase();
-
   FILTERED=[];
   for(var i=0;i<ALL_DATA.length;i++){
     var r=ALL_DATA[i];
@@ -302,37 +261,31 @@ function applyAll(){
     }
     FILTERED.push(r);
   }
-
   if(numSort){
     SORT_COL=numSort.col;
     SORT_DIR=numSort.dir;
   }
-
   if(SORT_COL>=0){
     FILTERED.sort(function(a,b){
       var va=a[SORT_COL],vb=b[SORT_COL];
       var na=parseFloat(va),nb=parseFloat(vb);
       if(isNaN(na)) na=-999999;
       if(isNaN(nb)) nb=-999999;
-      if(!isNaN(parseFloat(va))&&!isNaN(parseFloat(vb))) return (na-nb)*SORT_DIR;
+      if(!isNaN(parseFloat(va))&&!isNaN(parseFloat(vb))) return(na-nb)*SORT_DIR;
       va=String(va||'').toUpperCase();vb=String(vb||'').toUpperCase();
       if(va<vb)return -1*SORT_DIR;if(va>vb)return 1*SORT_DIR;return 0;
     });
   }
-
   PAGE=0;
   renderCards();
   renderCharts();
   renderTable();
 }
-
 function sortBy(col){
   if(SORT_COL===col){SORT_DIR*=-1;}
   else{SORT_COL=col;SORT_DIR=1;}
   applyAll();
 }
-
-// ===== CARDS =====
 function renderCards(){
   var d=FILTERED,tdy=0,d3=0,d7=0,d15=0,d30=0,ins=0,oos=0,act=0,inact=0;
   var ci=getSalesIndexes();
@@ -356,7 +309,6 @@ function renderCards(){
   salesH+=mkcd('15-Day Sales',fmt(d15),'o');
   salesH+=mkcd('30-Day Sales',fmt(d30),'p');
   document.getElementById('salesCards').innerHTML=salesH;
-
   var stockH='';
   stockH+=mkcd('In Stock',fmt(ins),'g');
   stockH+=mkcd('Out of Stock',fmt(oos),'r');
@@ -364,10 +316,8 @@ function renderCards(){
   stockH+=mkcd('Inactive',fmt(inact),'r');
   document.getElementById('stockCards').innerHTML=stockH;
 }
-
-function mkcd(l,v,c){return'<div class="cd '+c+'"><div class="lb">'+l+'</div><div class="vl">'+v+'</div></div>'}
-function fmt(n){return n==null?'0':Number(n).toLocaleString('en-IN')}
-
+function mkcd(l,v,c){return'<div class="cd '+c+'"><div class="lb">'+l+'</div><div class="vl">'+v+'</div></div>';}
+function fmt(n){return n==null?'0':Number(n).toLocaleString('en-IN');}
 function getSalesIndexes(){
   var ci={today:-1,day3:-1,day7:-1,day15:-1,day30:-1};
   for(var i=0;i<HEADERS.length;i++){
@@ -381,8 +331,6 @@ function getSalesIndexes(){
   if(ci.today<0){var n=HEADERS.length;ci.today=n-5;ci.day3=n-4;ci.day7=n-3;ci.day15=n-2;ci.day30=n-1;}
   return ci;
 }
-
-// ===== CHARTS =====
 function renderCharts(){
   var ci=getSalesIndexes();
   var tdy=0,d3=0,d7=0,d15=0,d30=0;
@@ -397,27 +345,20 @@ function renderCharts(){
     if(!stockMap[st])stockMap[st]=0;stockMap[st]++;
     if(ac==='INACTIVE')inactCount++;else actCount++;
   }
-
   dc('ch1');CHS.ch1=new Chart(document.getElementById('ch1'),{type:'bar',data:{labels:['Today','3 Day','7 Day','15 Day','30 Day'],datasets:[{data:[tdy,d3,d7,d15,d30],backgroundColor:['#39ff14','#4fc3f7','#e09f3e','#a855f7','#dc2f02'],borderRadius:5}]},options:bOpts()});
-
   var sl=[],sv=[],sc=['#39ff14','#dc2f02','#e09f3e','#4fc3f7','#a855f7'];
   for(var k in stockMap){sl.push(k||'BLANK');sv.push(stockMap[k]);}
   dc('ch2');CHS.ch2=new Chart(document.getElementById('ch2'),{type:'doughnut',data:{labels:sl,datasets:[{data:sv,backgroundColor:sc.slice(0,sl.length),borderWidth:0}]},options:pOpts()});
-
   var platArr=[];for(var k in platMap)platArr.push({n:k,v:platMap[k]});
-  platArr.sort(function(a,b){return b.v-a.v});
+  platArr.sort(function(a,b){return b.v-a.v;});
   var pl=[],pv=[],pc=['#4fc3f7','#39ff14','#e09f3e','#a855f7','#dc2f02','#f72585','#7209b7','#3a0ca3','#4361ee','#4cc9f0'];
   for(var i=0;i<platArr.length;i++){pl.push(platArr[i].n);pv.push(platArr[i].v);}
   dc('ch3');CHS.ch3=new Chart(document.getElementById('ch3'),{type:'bar',data:{labels:pl,datasets:[{data:pv,backgroundColor:pc.slice(0,pl.length),borderRadius:5}]},options:bOpts()});
-
   dc('ch4');CHS.ch4=new Chart(document.getElementById('ch4'),{type:'doughnut',data:{labels:['Active','Inactive'],datasets:[{data:[actCount,inactCount],backgroundColor:['#39ff14','#dc2f02'],borderWidth:0}]},options:pOpts()});
 }
-
-function bOpts(){return{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#888',font:{size:10}},grid:{color:'#222'}},y:{ticks:{color:'#888',font:{size:10}},grid:{color:'#222'}}}}}
-function pOpts(){return{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#eee',padding:10,font:{size:10}}}}}}
+function bOpts(){return{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#888',font:{size:10}},grid:{color:'#222'}},y:{ticks:{color:'#888',font:{size:10}},grid:{color:'#222'}}}};}
+function pOpts(){return{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#eee',padding:10,font:{size:10}}}}};}
 function dc(id){if(CHS[id]){CHS[id].destroy();CHS[id]=null;}}
-
-// ===== URL DETECTION =====
 function isUrl(v){var s=String(v||'').trim();return s.indexOf('http://')===0||s.indexOf('https://')===0||s.indexOf('www.')===0;}
 function makeLink(v){
   var s=String(v||'').trim();
@@ -426,8 +367,6 @@ function makeLink(v){
   if(display.length>30)display=display.substring(0,30)+'...';
   return'<a href="'+href+'" target="_blank" rel="noopener">'+display+'</a>';
 }
-
-// ===== RED VALUE CHECK =====
 function isRedValue(val,colIdx){
   var num=parseFloat(val);
   if(colIdx>=SORTABLE_FROM){
@@ -438,8 +377,6 @@ function isRedValue(val,colIdx){
   }
   return false;
 }
-
-// ===== TABLE =====
 function renderTable(){
   PER_PAGE=parseInt(document.getElementById('ppSelect').value)||100;
   var th='';
@@ -451,7 +388,6 @@ function renderTable(){
     else{th+='<th>'+HEADERS[i]+'</th>';}
   }
   document.getElementById('thead').innerHTML=th;
-
   var start=PAGE*PER_PAGE;
   var end=Math.min(start+PER_PAGE,FILTERED.length);
   var totalPages=Math.ceil(FILTERED.length/PER_PAGE)||1;
@@ -463,7 +399,6 @@ function renderTable(){
       var val=r[j];
       var cellClass='';
       var cellContent='';
-
       if(j===STOCK_COL){
         var su=String(val||'').trim().toUpperCase();
         cellContent=su==='IN STOCK'?'<span class="badge bg">IN STOCK</span>':'<span class="badge br">'+val+'</span>';
@@ -478,7 +413,6 @@ function renderTable(){
       }else{
         cellContent=(val===null||val===undefined)?'':val;
       }
-
       tb+='<td'+cellClass+'>'+cellContent+'</td>';
     }
     tb+='</tr>';
@@ -489,11 +423,8 @@ function renderTable(){
   document.getElementById('prevBtn').disabled=PAGE===0;
   document.getElementById('nextBtn').disabled=end>=FILTERED.length;
 }
-
 function changePage(dir){PAGE+=dir;renderTable();}
 function changePageSize(){PAGE=0;renderTable();}
-
-// ===== DOWNLOAD CSV =====
 function downloadCSV(){
   if(!FILTERED.length){alert('No data to download!');return;}
   var csv=[];
@@ -509,4 +440,13 @@ function downloadCSV(){
     csv.push(row.join(','));
   }
   var blob=new Blob([csv.join('\n')],{type:'text/csv;charset=utf-8;'});
-  var link=document.creat
+  var link=document.createElement('a');
+  link.href=URL.createObjectURL(blob);
+  link.download='SKU_WISE_SALES_'+new Date().toISOString().slice(0,10)+'.csv';
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+loadData();
+</script>
+</body>
+</html>
