@@ -129,61 +129,27 @@ var CHS={};
 var RATING_COLS=[];
 var NUMERIC_COLS=[]; // columns that are numeric (for low-high/high-low filters)
 
-// ===== LOAD DATA - Using script tag approach for Google Apps Script CORS =====
+// ===== LOAD DATA (same method as scanner project) =====
 function loadData(){
   document.getElementById('loader').style.display='block';
   document.getElementById('app').style.display='none';
-  document.getElementById('loader').innerHTML='<div class="spin"></div><br>Loading dashboard data...<br><span style="font-size:13px;color:#888">This may take 15-20 seconds</span>';
+  document.getElementById('loader').innerHTML='<div class="spin"></div><br>Loading dashboard data...<br><span style="font-size:13px;color:#888">37,000+ SKUs — may take 30-60 seconds</span>';
 
-  // Method 1: Try fetch first
-  fetch(API_URL,{redirect:'follow',headers:{'Accept':'application/json'}})
+  fetch(API_URL,{redirect:'follow'})
     .then(function(r){
-      if(!r.ok) throw new Error('HTTP '+r.status);
       return r.text();
     })
-    .then(function(txt){
-      // Google Apps Script sometimes returns HTML redirect, parse carefully
-      var d;
-      try{ d=JSON.parse(txt); }
-      catch(e){
-        // If HTML returned, try extracting JSON or use fallback
-        throw new Error('Invalid JSON response. Try opening this URL directly: '+API_URL);
-      }
-      onDataLoaded(d);
-    })
-    .catch(function(e){
-      // Method 2: Fallback using script injection (JSONP-like)
-      console.log('Fetch failed: '+e.message+', trying callback method...');
-      loadViaCallback();
-    });
-}
-
-// Fallback: Load via hidden iframe + postMessage or direct script
-function loadViaCallback(){
-  var callbackName='gascb_'+Date.now();
-  window[callbackName]=function(d){
-    onDataLoaded(d);
-    delete window[callbackName];
-  };
-  // Try with XMLHttpRequest which handles redirects differently
-  var xhr=new XMLHttpRequest();
-  xhr.open('GET',API_URL,true);
-  xhr.onload=function(){
-    if(xhr.status===200){
+    .then(function(text){
       try{
-        var d=JSON.parse(xhr.responseText);
+        var d=JSON.parse(text);
         onDataLoaded(d);
       }catch(e){
-        onErr('Could not parse data. Please check if the web app URL is correct and deployed as "Anyone".');
+        onErr('JSON parse error. Response length: '+text.length+' chars. First 200: '+text.substring(0,200));
       }
-    }else{
-      onErr('Server returned status '+xhr.status+'. Make sure the Apps Script is deployed as Web App with access "Anyone".');
-    }
-  };
-  xhr.onerror=function(){
-    onErr('Network error. Please check: 1) Apps Script is deployed as Web App 2) Access is set to "Anyone" 3) Try opening this URL directly in a new tab: <a href="'+API_URL+'" target="_blank" style="color:#4fc3f7">Test API URL</a>');
-  };
-  xhr.send();
+    })
+    .catch(function(e){
+      onErr('Fetch failed: '+e.message+'<br><br>Try opening API directly: <a href="'+API_URL+'" target="_blank" style="color:#4fc3f7">Click here to test</a>');
+    });
 }
 
 function onDataLoaded(d){
@@ -428,4 +394,33 @@ function renderCharts(){
   for(var i=0;i<platArr.length;i++){pl.push(platArr[i].n);pv.push(platArr[i].v);}
   dc('ch3');CHS.ch3=new Chart(document.getElementById('ch3'),{type:'bar',data:{labels:pl,datasets:[{data:pv,backgroundColor:pc.slice(0,pl.length),borderRadius:5}]},options:bOpts()});
 
-  dc('ch4');CHS.ch4=new Chart(document.getElementById('ch4'),{type:'doughnut',data:{labels:['Active','I
+  dc('ch4');CHS.ch4=new Chart(document.getElementById('ch4'),{type:'doughnut',data:{labels:['Active','Inactive'],datasets:[{data:[actCount,inactCount],backgroundColor:['#39ff14','#dc2f02'],borderWidth:0}]},options:pOpts()});
+}
+
+function bOpts(){return{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#888',font:{size:10}},grid:{color:'#222'}},y:{ticks:{color:'#888',font:{size:10}},grid:{color:'#222'}}}}}
+function pOpts(){return{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#eee',padding:10,font:{size:10}}}}}}
+function dc(id){if(CHS[id]){CHS[id].destroy();CHS[id]=null;}}
+
+// ===== URL DETECTION =====
+function isUrl(v){var s=String(v||'').trim();return s.indexOf('http://')===0||s.indexOf('https://')===0||s.indexOf('www.')===0;}
+function makeLink(v){
+  var s=String(v||'').trim();
+  var href=s;if(s.indexOf('www.')===0)href='https://'+s;
+  var display=s.replace(/^https?:\/\//,'').replace(/^www\./,'');
+  if(display.length>30)display=display.substring(0,30)+'...';
+  return'<a href="'+href+'" target="_blank" rel="noopener">'+display+'</a>';
+}
+
+// ===== RED VALUE CHECK =====
+function isRedValue(val,colIdx){
+  var num=parseFloat(val);
+  if(colIdx>=SORTABLE_FROM){
+    if(val===0||val==='0'||val===''||val===null||val===undefined)return true;
+  }
+  if(RATING_COLS.indexOf(colIdx)>=0){
+    if(!isNaN(num)&&num<3.5&&num>=0)return true;
+  }
+  return false;
+}
+
+// ===== 
