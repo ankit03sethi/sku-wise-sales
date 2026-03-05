@@ -218,7 +218,7 @@ td a:hover{text-decoration:underline;color:#39ff14}
 </div>
 
 <script>
-var API_URL='https://script.google.com/macros/s/AKfycbx1gJVgt1MRSdj6tSsSc1QRz_iR5kg65u6iI-A0oM9-q-D-KXS1OYh_EzPIIINBQxtK4w/exec';
+var API_URL='https://script.google.com/macros/s/AKfycbx7ov2e4VCcZ6Hv7thsszwNzGD2-RdeB5WUBGmAmXMsl_S4xGLmL-WQdiO9YBs1gMxjgA/exec';
 var ALL_DATA=[],HEADERS=[],FILTERED=[],SORT_COL=-1,SORT_DIR=1,PAGE=0,PER_PAGE=100;
 var STOCK_COL=12,ACTIVE_COL=13,PLATFORM_COL=1,COMPANY_COL=2;
 var SORTABLE_FROM=15;
@@ -231,7 +231,7 @@ var NUMERIC_UNIQUE_VALS={};
 var numDDState={};
 
 // Modal state
-var M={level:0,type:'',label:'',hasReasonLevel:false,reason:'',platform:'',company:'',baseData:[],reasonData:[],platformData:[],skuList:[],skuFiltered:[],sortCol:-1,sortDir:1,page:0};
+var M={level:0,type:'',label:'',hasReasonLevel:false,reason:'',platform:'',company:'',baseData:[],reasonData:[],platformData:[],skuList:[],skuFiltered:[],sortCol:-1,sortDir:1,page:0,tableFrom:0};
 
 // Global search state
 var G_TIMER=null,G_RESULTS=[],G_PAGE=0,G_SORT_COL=-1,G_SORT_DIR=1;
@@ -250,7 +250,7 @@ function isActiveValue(val){
 function loadData(){
   document.getElementById('loader').style.display='block';
   document.getElementById('app').style.display='none';
-  document.getElementById('loader').innerHTML='<div class="spin"></div><br>Loading dashboard data...<br><span style="font-size:13px;color:#888">37,000+ SKUs - may take 30-60 seconds</span>';
+  document.getElementById('loader').innerHTML='<div class="spin"></div><br>Loading dashboard data...<br><span style="font-size:13px;color:#888">This may take 15-30 seconds</span>';
   var controller=new AbortController();
   var timeoutId=setTimeout(function(){controller.abort();},90000);
   fetch(API_URL,{redirect:'follow',signal:controller.signal})
@@ -267,7 +267,9 @@ function loadData(){
 }
 function onDataLoaded(d){
   if(d.error){onErr(d.error);return;}
-  ALL_DATA=d.rows||[];HEADERS=d.headers||[];
+  var rawRows=d.rows||[];var cleanRows=[];
+  for(var i=0;i<rawRows.length;i++){if(rawRows[i][0]&&String(rawRows[i][0]).trim()!=='')cleanRows.push(rawRows[i]);}
+  ALL_DATA=cleanRows;HEADERS=d.headers||[];
   detectRatingCols();detectNumericCols();collectNumericUniqueVals();
   document.getElementById('loader').style.display='none';
   document.getElementById('app').style.display='block';
@@ -366,7 +368,7 @@ function mkcard(label,value,cc,type){
 function openDrill(type,label){
   var data=filterByType(type,FILTERED);
   var hasReason=(type==='active'||type==='inactive');
-  M={level:1,type:type,label:label,hasReasonLevel:hasReason,reason:'',platform:'',company:'',baseData:data,reasonData:data,platformData:[],skuList:[],skuFiltered:[],sortCol:-1,sortDir:1,page:0};
+  M={level:1,type:type,label:label,hasReasonLevel:hasReason,reason:'',platform:'',company:'',baseData:data,reasonData:data,platformData:[],skuList:[],skuFiltered:[],sortCol:-1,sortDir:1,page:0,tableFrom:0};
   if(hasReason){
     document.getElementById('modalTitle').textContent=label+' - Stock Reason Breakdown';
     document.getElementById('modalNav').style.display='none';
@@ -384,8 +386,49 @@ function closeModal(){
   document.body.style.overflow='';
 }
 function modalGoBack(){
+  var tableLevel=M.hasReasonLevel?4:3;
+  // If at table level, go back to the level we came from
+  if(M.level===tableLevel){
+    var from=M.tableFrom||(M.hasReasonLevel?3:2);
+    if(M.hasReasonLevel){
+      if(from===1){
+        M.level=1;M.reason='';M.platform='';M.company='';
+        document.getElementById('modalTitle').textContent=M.label+' - Stock Reason Breakdown';
+        document.getElementById('modalNav').style.display='none';
+        renderDrillReasons();return;
+      }
+      if(from===2){
+        M.level=2;M.platform='';M.company='';
+        document.getElementById('modalTitle').textContent=M.label+' - '+(M.reason||'ALL Reasons')+' - Platforms';
+        document.getElementById('modalNav').style.display='flex';
+        document.getElementById('modalBread').innerHTML='<span>'+M.label+'</span> &rarr; <span>'+(M.reason||'ALL')+'</span>';
+        renderDrillPlatforms();return;
+      }
+      if(from===3){
+        M.level=3;M.company='';
+        document.getElementById('modalTitle').textContent=M.label+' - '+(M.platform||'ALL Platforms')+' - Companies';
+        document.getElementById('modalNav').style.display='flex';
+        document.getElementById('modalBread').innerHTML='<span>'+M.label+'</span> &rarr; <span>'+(M.reason||'ALL')+'</span> &rarr; <span>'+(M.platform||'ALL')+'</span>';
+        renderDrillCompanies();return;
+      }
+    } else {
+      if(from===1){
+        M.level=1;M.platform='';M.company='';
+        document.getElementById('modalTitle').textContent=M.label+' - Platform Breakdown';
+        document.getElementById('modalNav').style.display='none';
+        renderDrillPlatforms();return;
+      }
+      if(from===2){
+        M.level=2;M.company='';
+        document.getElementById('modalTitle').textContent=M.label+' - '+(M.platform||'ALL Platforms')+' - Companies';
+        document.getElementById('modalNav').style.display='flex';
+        document.getElementById('modalBread').innerHTML='<span>'+M.label+'</span> &rarr; <span>'+(M.platform||'ALL')+'</span>';
+        renderDrillCompanies();return;
+      }
+    }
+  }
+  // Non-table level back navigation
   if(M.hasReasonLevel){
-    // Levels: 1=Reason, 2=Platform, 3=Company, 4=Table
     if(M.level<=1){closeModal();return;}
     if(M.level===2){
       M.level=1;M.reason='';M.platform='';M.company='';
@@ -395,33 +438,18 @@ function modalGoBack(){
     }
     if(M.level===3){
       M.level=2;M.platform='';M.company='';
-      document.getElementById('modalTitle').textContent=M.label+(M.reason?' - '+M.reason:' - ALL Reasons')+' - Platforms';
+      document.getElementById('modalTitle').textContent=M.label+' - '+(M.reason||'ALL Reasons')+' - Platforms';
       document.getElementById('modalNav').style.display='flex';
       document.getElementById('modalBread').innerHTML='<span>'+M.label+'</span> &rarr; <span>'+(M.reason||'ALL')+'</span>';
       renderDrillPlatforms();return;
     }
-    if(M.level===4){
-      M.level=3;M.company='';
-      document.getElementById('modalTitle').textContent=M.label+' - '+(M.platform||'ALL Platforms')+' - Companies';
-      document.getElementById('modalNav').style.display='flex';
-      document.getElementById('modalBread').innerHTML='<span>'+M.label+'</span> &rarr; <span>'+(M.reason||'ALL')+'</span> &rarr; <span>'+(M.platform||'ALL')+'</span>';
-      renderDrillCompanies();return;
-    }
   } else {
-    // Levels: 1=Platform, 2=Company, 3=Table
     if(M.level<=1){closeModal();return;}
     if(M.level===2){
       M.level=1;M.platform='';M.company='';
       document.getElementById('modalTitle').textContent=M.label+' - Platform Breakdown';
       document.getElementById('modalNav').style.display='none';
       renderDrillPlatforms();return;
-    }
-    if(M.level===3){
-      M.level=2;M.company='';
-      document.getElementById('modalTitle').textContent=M.label+' - '+(M.platform||'ALL Platforms')+' - Companies';
-      document.getElementById('modalNav').style.display='flex';
-      document.getElementById('modalBread').innerHTML='<span>'+M.label+'</span> &rarr; <span>'+(M.platform||'ALL')+'</span>';
-      renderDrillCompanies();return;
     }
   }
 }
@@ -449,19 +477,28 @@ function renderDrillReasons(){
   document.getElementById('modalContent').innerHTML=h;
 }
 function drillToReason(reason){
-  M.level=2;M.reason=reason;
-  if(reason){
-    M.reasonData=[];
-    for(var i=0;i<M.baseData.length;i++){
-      var v=String(M.baseData[i][STOCK_COL]||'').trim()||'(blank)';
-      if(v===reason)M.reasonData.push(M.baseData[i]);
-    }
-  } else {
+  if(!reason){
+    // ALL clicked - show SKU table directly
+    M.level=4;M.reason='';M.platform='';M.company='';
     M.reasonData=M.baseData.slice();
+    M.skuList=M.baseData.slice();
+    M.skuFiltered=M.skuList.slice();M.sortCol=-1;M.sortDir=1;M.page=0;
+    M.tableFrom=1;
+    document.getElementById('modalTitle').textContent=M.label+' - ALL';
+    document.getElementById('modalNav').style.display='flex';
+    document.getElementById('modalBread').innerHTML='<span>'+M.label+'</span> &rarr; <span>ALL</span>';
+    renderModalTable();
+    return;
   }
-  document.getElementById('modalTitle').textContent=M.label+' - '+(reason||'ALL Reasons')+' - Platforms';
+  M.level=2;M.reason=reason;
+  M.reasonData=[];
+  for(var i=0;i<M.baseData.length;i++){
+    var v=String(M.baseData[i][STOCK_COL]||'').trim()||'(blank)';
+    if(v===reason)M.reasonData.push(M.baseData[i]);
+  }
+  document.getElementById('modalTitle').textContent=M.label+' - '+reason+' - Platforms';
   document.getElementById('modalNav').style.display='flex';
-  document.getElementById('modalBread').innerHTML='<span>'+M.label+'</span> &rarr; <span>'+(reason||'ALL')+'</span>';
+  document.getElementById('modalBread').innerHTML='<span>'+M.label+'</span> &rarr; <span>'+reason+'</span>';
   renderDrillPlatforms();
 }
 
@@ -483,21 +520,36 @@ function renderDrillPlatforms(){
   document.getElementById('modalContent').innerHTML=h;
 }
 function drillToPlatform(platform){
+  var src=M.hasReasonLevel?M.reasonData:M.baseData;
+  if(!platform){
+    // ALL clicked - show SKU table directly
+    M.level=M.hasReasonLevel?4:3;M.platform='';M.company='';
+    M.platformData=src.slice();
+    M.skuList=src.slice();
+    M.skuFiltered=M.skuList.slice();M.sortCol=-1;M.sortDir=1;M.page=0;
+    M.tableFrom=M.hasReasonLevel?2:1;
+    var title=M.label;
+    if(M.hasReasonLevel)title+=' - '+(M.reason||'ALL');
+    title+=' - ALL Platforms';
+    document.getElementById('modalTitle').textContent=title;
+    document.getElementById('modalNav').style.display='flex';
+    var bread='<span>'+M.label+'</span>';
+    if(M.hasReasonLevel)bread+=' &rarr; <span>'+(M.reason||'ALL')+'</span>';
+    bread+=' &rarr; <span>ALL</span>';
+    document.getElementById('modalBread').innerHTML=bread;
+    renderModalTable();
+    return;
+  }
   var nextLevel=M.hasReasonLevel?3:2;
   M.level=nextLevel;M.platform=platform;
-  var src=M.hasReasonLevel?M.reasonData:M.baseData;
-  if(platform){
-    M.platformData=[];
-    for(var i=0;i<src.length;i++){if(String(src[i][PLATFORM_COL]||'').trim()===platform)M.platformData.push(src[i]);}
-  } else {
-    M.platformData=src.slice();
-  }
-  var title=M.label+' - '+(platform||'ALL Platforms')+' - Companies';
+  M.platformData=[];
+  for(var i=0;i<src.length;i++){if(String(src[i][PLATFORM_COL]||'').trim()===platform)M.platformData.push(src[i]);}
+  var title=M.label+' - '+platform+' - Companies';
   document.getElementById('modalTitle').textContent=title;
   document.getElementById('modalNav').style.display='flex';
   var bread='<span>'+M.label+'</span>';
   if(M.hasReasonLevel)bread+=' &rarr; <span>'+(M.reason||'ALL')+'</span>';
-  bread+=' &rarr; <span>'+(platform||'ALL')+'</span>';
+  bread+=' &rarr; <span>'+platform+'</span>';
   document.getElementById('modalBread').innerHTML=bread;
   renderDrillCompanies();
 }
@@ -521,6 +573,7 @@ function renderDrillCompanies(){
 function drillToCompany(company){
   var nextLevel=M.hasReasonLevel?4:3;
   M.level=nextLevel;M.company=company;
+  M.tableFrom=M.hasReasonLevel?3:2;
   if(company){
     M.skuList=[];
     for(var i=0;i<M.platformData.length;i++){
