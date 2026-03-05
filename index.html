@@ -825,15 +825,15 @@ function buildColumnFilters(){
       wrap.className='num-dd-wrap';
       wrap.setAttribute('data-col',c);
       numDDState[c]={sort:'',exactVal:null,rangeOp:null,rangeVal:null};
-      wrap.innerHTML='<div class="num-dd-btn" onclick="toggleNumDD('+c+')" id="numBtn_'+c+'"><span>'+hdr+'</span><span class="dd-arrow">&#9660;</span></div>'
+      var numHtml='<div class="num-dd-btn" onclick="toggleNumDD('+c+')" id="numBtn_'+c+'"><span>'+hdr+'</span><span class="dd-arrow">&#9660;</span></div>'
         +'<div class="num-dd-panel" id="numPanel_'+c+'">'
         +'<input class="num-dd-search" placeholder="Search number..." oninput="filterNumDDList('+c+',this.value)" id="numSearch_'+c+'">'
         +'<div class="num-dd-sort">'
         +'<div class="num-dd-sort-item" id="numLH_'+c+'" onclick="setNumSort('+c+',\'low-high\')">Low to High</div>'
-        +'<div class="num-dd-sort-item" id="numHL_'+c+'" onclick="setNumSort('+c+',\'high-low\')">High to Low</div>';
-      // Add rating range filters if this is a rating column
+        +'<div class="num-dd-sort-item" id="numHL_'+c+'" onclick="setNumSort('+c+',\'high-low\')">High to Low</div>'
+        +'</div>';
       if(RATING_COLS.indexOf(c)>=0){
-        wrap.innerHTML+='<div style="border-top:1px solid #333;padding-top:4px;margin-top:4px;margin-bottom:4px">'
+        numHtml+='<div class="num-dd-sort" style="border-top:1px solid #333;padding-top:4px">'
           +'<div class="num-dd-sort-item" onclick="setNumRange('+c+',\'above\',4.5)">Above 4.5</div>'
           +'<div class="num-dd-sort-item" onclick="setNumRange('+c+',\'above\',4)">Above 4.0</div>'
           +'<div class="num-dd-sort-item" onclick="setNumRange('+c+',\'above\',3.5)">Above 3.5</div>'
@@ -841,12 +841,13 @@ function buildColumnFilters(){
           +'<div class="num-dd-sort-item" onclick="setNumRange('+c+',\'below\',4.5)">Below 4.5</div>'
           +'<div class="num-dd-sort-item" onclick="setNumRange('+c+',\'below\',4)">Below 4.0</div>'
           +'<div class="num-dd-sort-item" onclick="setNumRange('+c+',\'below\',3.5)">Below 3.5</div>'
-          +'<div class="num-dd-sort-item" onclick="setNumRange('+c+',\'below\',3)">Below 3.0</div></div>';
+          +'<div class="num-dd-sort-item" onclick="setNumRange('+c+',\'below\',3)">Below 3.0</div>'
+          +'</div>';
       }
-      wrap.innerHTML+='</div>'
-        +'<div class="num-dd-vals" id="numVals_'+c+'"></div>'
+      numHtml+='<div class="num-dd-vals" id="numVals_'+c+'"></div>'
         +'<button class="num-dd-clear" onclick="clearNumDD('+c+')">Clear Filter</button>'
         +'</div>';
+      wrap.innerHTML=numHtml;
       frow.insertBefore(wrap,sb);
       renderNumDDList(c,'');
     } else if(colSets[c]==='TEXT_DD'){
