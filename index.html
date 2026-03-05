@@ -130,7 +130,7 @@ td a:hover{text-decoration:underline;color:#39ff14}
 </head>
 <body>
 <div class="header-row">
-  <button class="home-btn" onclick="clearFilters()" title="Home - Clear All Filters"><svg viewBox="0 0 24 24" fill="none" stroke="#39ff14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M5 10v9a1 1 0 001 1h3v-5h6v5h3a1 1 0 001-1v-9"/></svg></button>
+  <button class="home-btn" onclick="clearFilters()" title="Home - Clear All Filters"><svg viewBox="0 0 24 24" fill="none" stroke="#39ff14" stroke-width="1.5"><path d="M4 12L12 4l8 8"/><path d="M6 10.5V19.5a.5.5 0 00.5.5H10v-5h4v5h3.5a.5.5 0 00.5-.5V10.5"/></svg></button>
   <div class="sub" id="info">SKU WISE SALES</div>
   <div class="global-search-wrap">
     <input class="global-search" id="globalSearch" placeholder="Search anything across all SKUs..." oninput="globalSearchHandler()">
@@ -324,9 +324,11 @@ function filterByType(type,dataset){
       case 'day30':if((Number(r[ci.day30])||0)>0)result.push(r);break;
       case 'day60':if((Number(r[ci.day60])||0)>0)result.push(r);break;
       case 'needopen':
-        if(stock==='IN STOCK'&&!isActiveValue(r[ACTIVE_COL]))result.push(r);break;
+        if(STOCK_IN_PLAT_COL>=0){var sipVal=parseFloat(r[STOCK_IN_PLAT_COL]);if(stock==='IN STOCK'&&(isNaN(sipVal)||sipVal===0))result.push(r);}
+        else{if(stock==='IN STOCK'&&!isActiveValue(r[ACTIVE_COL]))result.push(r);}break;
       case 'needclose':
-        if(stock!=='IN STOCK'&&stock!==''&&isActiveValue(r[ACTIVE_COL])&&activeNum>0)result.push(r);break;
+        if(STOCK_IN_PLAT_COL>=0){var sipVal2=parseFloat(r[STOCK_IN_PLAT_COL]);if(stock!=='IN STOCK'&&stock!==''&&!isNaN(sipVal2)&&sipVal2>0)result.push(r);}
+        else{if(stock!=='IN STOCK'&&stock!==''&&isActiveValue(r[ACTIVE_COL])&&activeNum>0)result.push(r);}break;
     }
   }
   return result;
@@ -823,14 +825,14 @@ function buildColumnFilters(){
         +'</div>';
       if(RATING_COLS.indexOf(c)>=0){
         numHtml+='<div class="num-dd-sort" style="border-top:1px solid #333;padding-top:4px">'
-          +'<div class="num-dd-sort-item" style="color:#39ff14" onclick="setNumRange('+c+',\'above\',4.5)">Above 4.5</div>'
-          +'<div class="num-dd-sort-item" style="color:#39ff14" onclick="setNumRange('+c+',\'above\',4)">Above 4.0</div>'
-          +'<div class="num-dd-sort-item" style="color:#e09f3e" onclick="setNumRange('+c+',\'above\',3.5)">Above 3.5</div>'
-          +'<div class="num-dd-sort-item" style="color:#e09f3e" onclick="setNumRange('+c+',\'above\',3)">Above 3.0</div>'
-          +'<div class="num-dd-sort-item" style="color:#ff4444" onclick="setNumRange('+c+',\'below\',4.5)">Below 4.5</div>'
-          +'<div class="num-dd-sort-item" style="color:#ff4444" onclick="setNumRange('+c+',\'below\',4)">Below 4.0</div>'
-          +'<div class="num-dd-sort-item" style="color:#ff4444" onclick="setNumRange('+c+',\'below\',3.5)">Below 3.5</div>'
-          +'<div class="num-dd-sort-item" style="color:#ff4444" onclick="setNumRange('+c+',\'below\',3)">Below 3.0</div>'
+          +'<div class="num-dd-sort-item" onclick="setNumRange('+c+',\'above\',4.5)">Above 4.5</div>'
+          +'<div class="num-dd-sort-item" onclick="setNumRange('+c+',\'above\',4)">Above 4.0</div>'
+          +'<div class="num-dd-sort-item" onclick="setNumRange('+c+',\'above\',3.5)">Above 3.5</div>'
+          +'<div class="num-dd-sort-item" onclick="setNumRange('+c+',\'above\',3)">Above 3.0</div>'
+          +'<div class="num-dd-sort-item" onclick="setNumRange('+c+',\'below\',4.5)">Below 4.5</div>'
+          +'<div class="num-dd-sort-item" onclick="setNumRange('+c+',\'below\',4)">Below 4.0</div>'
+          +'<div class="num-dd-sort-item" onclick="setNumRange('+c+',\'below\',3.5)">Below 3.5</div>'
+          +'<div class="num-dd-sort-item" onclick="setNumRange('+c+',\'below\',3)">Below 3.0</div>'
           +'</div>';
       }
       numHtml+='<div class="num-dd-vals" id="numVals_'+c+'"></div>'
@@ -1156,8 +1158,8 @@ function detectStockInPlatCol(){STOCK_IN_PLAT_COL=-1;for(var i=0;i<HEADERS.lengt
 function formatCellValue(val,j){
   var cc='',ct='';
   if(j===STOCK_COL){var su=String(val||'').trim().toUpperCase();ct=su==='IN STOCK'?'<span class="badge bg">IN STOCK</span>':'<span class="badge br">'+val+'</span>';}
-  else if(j===ACTIVE_COL){ct=isActiveValue(val)?'<span class="badge bg">'+val+'</span>':'<span class="badge br">'+(val===''||val===null||val===undefined?'BLANK':val)+'</span>';}
-  else if(j===STOCK_IN_PLAT_COL&&STOCK_IN_PLAT_COL>=0){var sv=String(val===null||val===undefined?'':val).trim();var n=parseFloat(sv);if(sv===''||sv==='0'||sv==='0.0'||(!isNaN(n)&&n===0)){cc=' style="color:#ff4444;font-weight:700"';ct=sv===''?'0':sv;}else if(!isNaN(n)&&n>0){cc=' style="color:#39ff14;font-weight:700"';ct=sv;}else{ct=sv;}}
+  else if(STOCK_IN_PLAT_COL>=0&&j===STOCK_IN_PLAT_COL){var sv=String(val===null||val===undefined?'':val).trim();var n=parseFloat(sv);if(sv===''||sv==='0'||sv==='0.0'||(!isNaN(n)&&n===0)){cc=' style="color:#ff4444;font-weight:700"';ct=sv===''?'0':sv;}else if(!isNaN(n)&&n>0){cc=' style="color:#39ff14;font-weight:700"';ct=sv;}else{ct=sv;}}
+  else if(j===ACTIVE_COL&&(STOCK_IN_PLAT_COL<0||j!==STOCK_IN_PLAT_COL)){ct=isActiveValue(val)?'<span class="badge bg">'+val+'</span>':'<span class="badge br">'+(val===''||val===null||val===undefined?'BLANK':val)+'</span>';}
   else if(RATING_COLS.indexOf(j)>=0){var n=parseFloat(val);if(!isNaN(n)&&n>0){if(n>=4){cc=' style="color:#39ff14;font-weight:700"';}else if(n>=3){cc=' style="color:#e09f3e;font-weight:700"';}else{cc=' style="color:#ff4444;font-weight:700"';}ct=val;}else{ct=(val===null||val===undefined)?'':val;}}
   else if(isUrl(val)){ct=makeLink(val);}
   else if(isRedVal(val,j)){cc=' class="zero"';ct=(val===''||val===null||val===undefined)?'0':val;}
