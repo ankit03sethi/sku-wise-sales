@@ -376,7 +376,15 @@ function mkcard(label,value,cc,type){
 function openDrill(type,label){
   var data=filterByType(type,FILTERED);
   var hasReason=(type==='active'||type==='inactive');
-  M={level:1,type:type,label:label,hasReasonLevel:hasReason,reason:'',platform:'',company:'',baseData:data,reasonData:data,platformData:[],skuList:[],skuFiltered:[],sortCol:-1,sortDir:1,page:0,tableFrom:0};
+  var ci=getSalesIndexes();
+  var sumCol=-1;
+  if(type==='today')sumCol=ci.today;
+  else if(type==='day3')sumCol=ci.day3;
+  else if(type==='day7')sumCol=ci.day7;
+  else if(type==='day15')sumCol=ci.day15;
+  else if(type==='day30')sumCol=ci.day30;
+  else if(type==='day60')sumCol=ci.day60;
+  M={level:1,type:type,label:label,hasReasonLevel:hasReason,reason:'',platform:'',company:'',baseData:data,reasonData:data,platformData:[],skuList:[],skuFiltered:[],sortCol:-1,sortDir:1,page:0,tableFrom:0,sumCol:sumCol};
   if(hasReason){
     document.getElementById('modalTitle').textContent=label+' - Stock Reason Breakdown';
     document.getElementById('modalNav').style.display='none';
@@ -467,6 +475,16 @@ function groupBy(data,col){
   var arr=[];for(var k in map)arr.push({name:k,count:map[k]});
   arr.sort(function(a,b){return b.count-a.count;});return arr;
 }
+function groupBySum(data,groupCol,sumCol){
+  var map={};
+  for(var i=0;i<data.length;i++){var k=String(data[i][groupCol]||'').trim()||'(blank)';if(!map[k])map[k]=0;map[k]+=Number(data[i][sumCol])||0;}
+  var arr=[];for(var k in map)arr.push({name:k,count:map[k]});
+  arr.sort(function(a,b){return b.count-a.count;});return arr;
+}
+function getTotalVal(data,sumCol){
+  if(sumCol<0)return data.length;
+  var t=0;for(var i=0;i<data.length;i++)t+=Number(data[i][sumCol])||0;return t;
+}
 
 // ===== REASON LEVEL (Column M) for Active/Inactive =====
 function renderDrillReasons(){
@@ -513,12 +531,13 @@ function drillToReason(reason){
 // ===== PLATFORM LEVEL =====
 function renderDrillPlatforms(){
   var src=M.hasReasonLevel?M.reasonData:M.baseData;
-  var platforms=groupBy(src,PLATFORM_COL);
+  var platforms=M.sumCol>=0?groupBySum(src,PLATFORM_COL,M.sumCol):groupBy(src,PLATFORM_COL);
+  var totalVal=getTotalVal(src,M.sumCol);
   var colors=['#4fc3f7','#39ff14','#e09f3e','#a855f7','#dc2f02','#f72585','#7209b7','#3a0ca3'];
   var h='<div class="drill-grid">';
   // ALL option first
   h+='<div class="drill-item all-item" onclick="drillToPlatform(\'\')">';
-  h+='<div class="di-name">ALL</div><div class="di-count">'+fmt(src.length)+'</div></div>';
+  h+='<div class="di-name">ALL</div><div class="di-count">'+fmt(totalVal)+'</div></div>';
   for(var i=0;i<platforms.length;i++){
     var p=platforms[i];
     h+='<div class="drill-item" style="border-left-color:'+colors[i%colors.length]+'" onclick="drillToPlatform(\''+p.name.replace(/'/g,"\\'")+'\')">';
@@ -564,12 +583,13 @@ function drillToPlatform(platform){
 
 // ===== COMPANY LEVEL =====
 function renderDrillCompanies(){
-  var companies=groupBy(M.platformData,COMPANY_COL);
+  var companies=M.sumCol>=0?groupBySum(M.platformData,COMPANY_COL,M.sumCol):groupBy(M.platformData,COMPANY_COL);
+  var totalVal=getTotalVal(M.platformData,M.sumCol);
   var colors=['#4fc3f7','#39ff14','#e09f3e','#a855f7','#dc2f02','#f72585','#7209b7'];
   var h='<div class="drill-grid">';
   // ALL option first
   h+='<div class="drill-item all-item" onclick="drillToCompany(\'\')">';
-  h+='<div class="di-name">ALL</div><div class="di-count">'+fmt(M.platformData.length)+'</div></div>';
+  h+='<div class="di-name">ALL</div><div class="di-count">'+fmt(totalVal)+'</div></div>';
   for(var i=0;i<companies.length;i++){
     var c=companies[i];
     h+='<div class="drill-item" style="border-left-color:'+colors[i%colors.length]+'" onclick="drillToCompany(\''+c.name.replace(/'/g,"\\'")+'\')">';
