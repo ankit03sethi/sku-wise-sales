@@ -329,6 +329,8 @@ function filterByType(type,dataset){
       case 'needclose':
         if(STOCK_IN_PLAT_COL>=0){var sipVal2=parseFloat(r[STOCK_IN_PLAT_COL]);if(stock!=='IN STOCK'&&stock!==''&&!isNaN(sipVal2)&&sipVal2>0)result.push(r);}
         else{if(stock!=='IN STOCK'&&stock!==''&&isActiveValue(r[ACTIVE_COL])&&activeNum>0)result.push(r);}break;
+      case 'inactiveInStock':
+        if(!isActiveValue(r[ACTIVE_COL])&&stock==='IN STOCK')result.push(r);break;
     }
   }
   return result;
@@ -364,8 +366,11 @@ function renderCards(){
   var ntcData=filterByType('needclose',data);
 
   var ah='';
+  var iisData=filterByType('inactiveInStock',data);
+
   ah+=mkcard('Need To Open',fmt(ntoData.length),'pk','needopen');
   ah+=mkcard('Need To Close',fmt(ntcData.length),'r','needclose');
+  ah+=mkcard('Inactive In Stock',fmt(iisData.length),'o','inactiveInStock');
   document.getElementById('actionCards').innerHTML=ah;
 }
 function mkcard(label,value,cc,type){
