@@ -1199,7 +1199,7 @@ function renderCharts(){
     if(pl){if(!platMap[pl])platMap[pl]=0;platMap[pl]+=Number(r[ci.day30])||0;}if(!stockMap[st])stockMap[st]=0;stockMap[st]++;
     if(isActiveValue(r[ACTIVE_COL]))actCount++;else inactCount++;
   }
-  dc('ch1');CHS.ch1=new Chart(document.getElementById('ch1'),{type:'bar',data:{labels:['Today','3-Day Avg','7-Day Avg','15-Day Avg','30-Day Avg','60-Day Avg'],datasets:[{data:[Math.round(tdy/1),Math.round(d3/3),Math.round(d7/7),Math.round(d15/15),Math.round(d30/30),Math.round(d60/60)],backgroundColor:['#39ff14','#4fc3f7','#e09f3e','#a855f7','#dc2f02','#f72585'],borderRadius:5}]},options:bOpts()});
+  dc('ch1');CHS.ch1=new Chart(document.getElementById('ch1'),{type:'bar',data:{labels:['60-Day Avg','30-Day Avg','15-Day Avg','7-Day Avg','3-Day Avg','Today'],datasets:[{data:[Math.round(d60/60),Math.round(d30/30),Math.round(d15/15),Math.round(d7/7),Math.round(d3/3),Math.round(tdy/1)],backgroundColor:['#f72585','#dc2f02','#a855f7','#e09f3e','#4fc3f7','#39ff14'],borderRadius:5}]},options:bOpts()});
   var sl=[],sv=[],sc=['#39ff14','#dc2f02','#e09f3e','#4fc3f7','#a855f7'];for(var k in stockMap){sl.push(k||'BLANK');sv.push(stockMap[k]);}
   dc('ch2');CHS.ch2=new Chart(document.getElementById('ch2'),{type:'doughnut',data:{labels:sl,datasets:[{data:sv,backgroundColor:sc.slice(0,sl.length),borderWidth:0}]},options:pOpts()});
   var platArr=[];for(var k in platMap)platArr.push({n:k,v:platMap[k]});platArr.sort(function(a,b){return b.v-a.v;});
