@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SKU WISE SALES Dashboard</title>
+<title>SKU WISE Dashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -11,8 +11,8 @@ body{font-family:'Segoe UI',sans-serif;background:#1a1a2e;color:#eee;padding:12p
 .header-row{display:flex;justify-content:center;align-items:center;position:relative;margin-bottom:4px}
 h1{text-align:center;color:#39ff14;font-size:20px;letter-spacing:1px}
 .global-search-wrap{position:absolute;right:0;top:50%;transform:translateY(-50%);display:flex;align-items:center}
-.search-icon{background:none;border:none;color:#eee;font-size:20px;cursor:pointer;padding:6px;transition:color .2s}
-.search-icon:hover{color:#39ff14}
+.search-icon{background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center}
+.search-icon svg{width:28px;height:28px;fill:none;stroke:#39ff14}
 .global-search{background:#0a0f1e;color:#eee;border:1px solid #444;border-radius:8px;padding:8px 14px;font-size:13px;width:0;opacity:0;transition:width .3s ease,opacity .3s ease,border-color .2s,padding .3s ease;overflow:hidden;padding:0}
 .global-search.open{width:220px;opacity:1;padding:8px 14px;border-color:#39ff14}
 .global-search:focus{border-color:#39ff14;outline:none;box-shadow:0 0 8px rgba(57,255,20,.3)}
@@ -69,8 +69,7 @@ td a:hover{text-decoration:underline;color:#39ff14}
 .srch:focus{border-color:#4fc3f7;outline:none}
 .ft{text-align:center;color:#555;font-size:10px;margin-top:8px}
 .home-btn{background:none;border:none;cursor:pointer;padding:4px;position:absolute;left:0;top:50%;transform:translateY(-50%);display:flex;align-items:center}
-.home-btn svg{width:28px;height:28px;fill:none;stroke:#39ff14;transition:.2s}
-.home-btn:hover svg{stroke:#fff}
+.home-btn svg{width:28px;height:28px;fill:none;stroke:#39ff14}
 @media(max-width:768px){.chs{grid-template-columns:1fr}.cards{grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}.global-search.open{width:160px;font-size:11px;padding:6px 10px}}
 
 /* CUSTOM NUMERIC DROPDOWN */
@@ -134,10 +133,10 @@ td a:hover{text-decoration:underline;color:#39ff14}
 <body>
 <div class="header-row">
   <button class="home-btn" onclick="clearFilters()" title="Home - Clear All Filters"><svg viewBox="0 0 24 24" fill="none" stroke="#39ff14" stroke-width="1.5"><path d="M4 12L12 4l8 8"/><path d="M6 10.5V19.5a.5.5 0 00.5.5H10v-5h4v5h3.5a.5.5 0 00.5-.5V10.5"/></svg></button>
-  <div class="sub" id="info">SKU WISE SALES</div>
+  <div class="sub" id="info">SKU WISE</div>
   <div class="global-search-wrap">
     <input class="global-search" id="globalSearch" placeholder="Search SKUs..." oninput="globalSearchHandler()">
-    <button class="search-icon" onclick="toggleSearch()" title="Search">&#128269;</button>
+    <button class="search-icon" onclick="toggleSearch()" title="Search"><svg viewBox="0 0 24 24" fill="none" stroke="#39ff14" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg></button>
   </div>
 </div>
 <div id="loader" class="loading"><div class="spin"></div><br>Loading dashboard data...<br><span style="font-size:13px;color:#888">This may take 15-20 seconds</span></div>
@@ -288,7 +287,7 @@ function onDataLoaded(d){
   document.getElementById('loader').style.display='none';
   document.getElementById('app').style.display='block';
   document.getElementById('lastUp').textContent='Updated: '+new Date().toLocaleString();
-  document.getElementById('info').textContent='SKU WISE SALES';
+  document.getElementById('info').textContent='SKU WISE';
   buildColumnFilters();applyAll();
 }
 function onErr(msg){document.getElementById('loader').innerHTML='<div style="color:#dc2f02;font-size:14px">'+msg+'</div>';}
