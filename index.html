@@ -383,12 +383,12 @@ function renderCards(){
     d7+=Number(data[i][ci.day7])||0;d15+=Number(data[i][ci.day15])||0;d30+=Number(data[i][ci.day30])||0;d60+=Number(data[i][ci.day60])||0;
   }
   var sh='';
-  sh+=mkcard('Today Sales',fmt(tdy),'g','today');
-  sh+=mkcard('3-Day Sales',fmt(d3),'g','day3');
-  sh+=mkcard('7-Day Sales',fmt(d7),'o','day7');
-  sh+=mkcard('15-Day Sales',fmt(d15),'o','day15');
-  sh+=mkcard('30-Day Sales',fmt(d30),'p','day30');
-  sh+=mkcard('60-Day Sales',fmt(d60),'pk','day60');
+  sh+=mkcard('Today Avg/Day',fmt(Math.round(tdy/1)),'g','today');
+  sh+=mkcard('3-Day Avg/Day',fmt(Math.round(d3/3)),'g','day3');
+  sh+=mkcard('7-Day Avg/Day',fmt(Math.round(d7/7)),'o','day7');
+  sh+=mkcard('15-Day Avg/Day',fmt(Math.round(d15/15)),'o','day15');
+  sh+=mkcard('30-Day Avg/Day',fmt(Math.round(d30/30)),'p','day30');
+  sh+=mkcard('60-Day Avg/Day',fmt(Math.round(d60/60)),'pk','day60');
   document.getElementById('salesCards').innerHTML=sh;
 
   var sth='';
@@ -693,7 +693,7 @@ function renderModalTable(){
   h+='<div class="m-twrap"><table><thead><tr>';
   for(var i=0;i<HEADERS.length;i++){
     var arrow='';if(M.sortCol===i)arrow='<span class="arrow">'+(M.sortDir===1?'\u25B2':'\u25BC')+'</span>';
-    h+='<th class="sortable" onclick="mSort('+i+')">'+HEADERS[i]+arrow+'</th>';
+    h+='<th class="sortable" onclick="mSort('+i+')">'+displayHeader(i)+arrow+'</th>';
   }
   h+='</tr></thead><tbody id="modalTableBody"></tbody></table></div>';
   h+='<div class="m-pag"><div style="color:#4fc3f7;font-size:12px">Scroll to load more...</div></div></div>';
@@ -792,7 +792,7 @@ function renderGlobalResults(){
   h+='<div class="m-twrap"><table><thead><tr>';
   for(var i=0;i<HEADERS.length;i++){
     var arrow='';if(G_SORT_COL===i)arrow='<span class="arrow">'+(G_SORT_DIR===1?'\u25B2':'\u25BC')+'</span>';
-    h+='<th class="sortable" onclick="gSort('+i+')">'+HEADERS[i]+arrow+'</th>';
+    h+='<th class="sortable" onclick="gSort('+i+')">'+displayHeader(i)+arrow+'</th>';
   }
   h+='</tr></thead><tbody id="gResTableBody">';
   if(data.length===0)h+='<tr><td colspan="'+HEADERS.length+'" style="text-align:center;color:#888;padding:20px">No results found</td></tr>';
@@ -1199,7 +1199,7 @@ function renderCharts(){
     if(pl){if(!platMap[pl])platMap[pl]=0;platMap[pl]+=Number(r[ci.day30])||0;}if(!stockMap[st])stockMap[st]=0;stockMap[st]++;
     if(isActiveValue(r[ACTIVE_COL]))actCount++;else inactCount++;
   }
-  dc('ch1');CHS.ch1=new Chart(document.getElementById('ch1'),{type:'bar',data:{labels:['Today','3 Day','7 Day','15 Day','30 Day','60 Day'],datasets:[{data:[tdy,d3,d7,d15,d30,d60],backgroundColor:['#39ff14','#4fc3f7','#e09f3e','#a855f7','#dc2f02','#f72585'],borderRadius:5}]},options:bOpts()});
+  dc('ch1');CHS.ch1=new Chart(document.getElementById('ch1'),{type:'bar',data:{labels:['Today','3-Day Avg','7-Day Avg','15-Day Avg','30-Day Avg','60-Day Avg'],datasets:[{data:[Math.round(tdy/1),Math.round(d3/3),Math.round(d7/7),Math.round(d15/15),Math.round(d30/30),Math.round(d60/60)],backgroundColor:['#39ff14','#4fc3f7','#e09f3e','#a855f7','#dc2f02','#f72585'],borderRadius:5}]},options:bOpts()});
   var sl=[],sv=[],sc=['#39ff14','#dc2f02','#e09f3e','#4fc3f7','#a855f7'];for(var k in stockMap){sl.push(k||'BLANK');sv.push(stockMap[k]);}
   dc('ch2');CHS.ch2=new Chart(document.getElementById('ch2'),{type:'doughnut',data:{labels:sl,datasets:[{data:sv,backgroundColor:sc.slice(0,sl.length),borderWidth:0}]},options:pOpts()});
   var platArr=[];for(var k in platMap)platArr.push({n:k,v:platMap[k]});platArr.sort(function(a,b){return b.v-a.v;});
@@ -1214,7 +1214,7 @@ function dc(id){if(CHS[id]){CHS[id].destroy();CHS[id]=null;}}
 function renderTable(){
   // Clear tbody and reset loaded counter
   var th='';for(var i=0;i<HEADERS.length;i++){var s=i>=SORTABLE_FROM;var arrow='';if(SORT_COL===i)arrow='<span class="arrow">'+(SORT_DIR===1?'\u25B2':'\u25BC')+'</span>';
-    if(s){th+='<th class="sortable" onclick="sortBy('+i+')">'+HEADERS[i]+arrow+'</th>';}else{th+='<th>'+HEADERS[i]+'</th>';}}
+    if(s){th+='<th class="sortable" onclick="sortBy('+i+')">'+displayHeader(i)+arrow+'</th>';}else{th+='<th>'+displayHeader(i)+'</th>';}}
   document.getElementById('thead').innerHTML=th;
   document.getElementById('tbody').innerHTML='';
   LOADED=0;
@@ -1251,8 +1251,21 @@ function loadMoreMainRows(){
   }
 }
 function detectStockInPlatCol(){STOCK_IN_PLAT_COL=-1;for(var i=0;i<HEADERS.length;i++){var h=String(HEADERS[i]||'').trim().toUpperCase();if(h.indexOf('STOCK IN PLAT')>=0||h.indexOf('STOCK_IN_PLAT')>=0||h==='STOCK IN PLATFORM'){STOCK_IN_PLAT_COL=i;break;}}console.log('STOCK_IN_PLAT_COL detected:',STOCK_IN_PLAT_COL,STOCK_IN_PLAT_COL>=0?HEADERS[STOCK_IN_PLAT_COL]:'NOT FOUND');}
+function getSalesDivisor(colIdx){
+  var ci=getSalesIndexes();
+  if(colIdx===ci.today)return 1;
+  if(colIdx===ci.day3)return 3;
+  if(colIdx===ci.day7)return 7;
+  if(colIdx===ci.day15)return 15;
+  if(colIdx===ci.day30)return 30;
+  if(colIdx===ci.day60)return 60;
+  return 0;
+}
+function displayHeader(i){var h=HEADERS[i];if(getSalesDivisor(i)>0)return h+' <span style="font-size:9px;opacity:0.7">(Avg/Day)</span>';return h;}
 function formatCellValue(val,j){
   var cc='',ct='';
+  var divisor=getSalesDivisor(j);
+  if(divisor>0){var n=parseFloat(val)||0;var avg=n/divisor;ct=avg%1===0?String(avg):avg.toFixed(1);if(avg===0){cc=' class="zero"';}return '<td'+cc+'>'+ct+'</td>';}
   if(j===STOCK_COL){var su=String(val||'').trim().toUpperCase();if(su==='IN STOCK'){cc=' style="color:#39ff14;font-weight:700"';ct='IN STOCK';}else{cc=' style="color:#ff4444;font-weight:700"';ct=val||'';}}
   else if(STOCK_IN_PLAT_COL>=0&&j===STOCK_IN_PLAT_COL){var sv=String(val===null||val===undefined?'':val).trim();var n=parseFloat(sv);if(!isNaN(n)&&n>0){cc=' style="color:#39ff14;font-weight:700"';ct=sv;}else{cc=' style="color:#ff4444;font-weight:700"';ct=sv===''?'0':sv;}}
   else if(j===ACTIVE_COL&&(STOCK_IN_PLAT_COL<0||j!==STOCK_IN_PLAT_COL)){ct=isActiveValue(val)?'<span class="badge bg">'+val+'</span>':'<span class="badge br">'+(val===''||val===null||val===undefined?'BLANK':val)+'</span>';}
