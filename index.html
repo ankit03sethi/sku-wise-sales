@@ -1174,6 +1174,23 @@ function buildColumnFilters(){
   trendSel.onchange=applyAll;
   if(aiSel.nextSibling){frow.insertBefore(trendSel,aiSel.nextSibling);}
   else{frow.insertBefore(trendSel,sb);}
+
+  // Add High Shipping / Low Price filters
+  var hsSel=document.createElement('select');hsSel.className='col-filter';hsSel.id='highShipFilter';
+  hsSel.style.cssText='background:#0a0f1e;color:#eee;border:1px solid #444;border-radius:6px;padding:5px 8px;font-size:11px;min-width:110px;max-width:160px';
+  hsSel.setAttribute('data-type','special-hs');
+  hsSel.innerHTML='<option value="">HIGH SHIPPING</option><option value="YES">High Shipping</option>';
+  hsSel.onchange=applyAll;
+  if(trendSel.nextSibling){frow.insertBefore(hsSel,trendSel.nextSibling);}
+  else{frow.insertBefore(hsSel,sb);}
+
+  var lpSel=document.createElement('select');lpSel.className='col-filter';lpSel.id='lowPriceFilter';
+  lpSel.style.cssText='background:#0a0f1e;color:#eee;border:1px solid #444;border-radius:6px;padding:5px 8px;font-size:11px;min-width:110px;max-width:160px';
+  lpSel.setAttribute('data-type','special-lp');
+  lpSel.innerHTML='<option value="">LOW PRICE</option><option value="YES">Low Price</option>';
+  lpSel.onchange=applyAll;
+  if(hsSel.nextSibling){frow.insertBefore(lpSel,hsSel.nextSibling);}
+  else{frow.insertBefore(lpSel,sb);}
 }
 
 // ===== TEXT DROPDOWN LOGIC (for >200 unique values) =====
@@ -1319,6 +1336,8 @@ function clearFilters(){
   var sels=document.querySelectorAll('.col-filter');for(var i=0;i<sels.length;i++)sels[i].value='';
   var aiF=document.getElementById('activeInactiveFilter');if(aiF)aiF.value='';
   var tF=document.getElementById('trendFilter');if(tF)tF.value='';
+  var hsF=document.getElementById('highShipFilter');if(hsF)hsF.value='';
+  var lpF=document.getElementById('lowPriceFilter');if(lpF)lpF.value='';
   document.getElementById('searchBox').value='';
   document.getElementById('globalSearch').value='';
   for(var k in numDDState){
@@ -1337,13 +1356,15 @@ function clearFilters(){
 }
 function applyAll(){
   var tf=[];var ns=null;var exactFilters=[];var textFilters=[];var rangeFilters=[];
-  var aiFilter='';var trendFilter='';
+  var aiFilter='';var trendFilter='';var hsFilter='';var lpFilter='';
   var sels=document.querySelectorAll('.col-filter');
   for(var i=0;i<sels.length;i++){
     var v=sels[i].value;if(!v)continue;
     var dtype=sels[i].getAttribute('data-type');
     if(dtype==='special-ai'){aiFilter=v;continue;}
     if(dtype==='special-trend'){trendFilter=v;continue;}
+    if(dtype==='special-hs'){hsFilter=v;continue;}
+    if(dtype==='special-lp'){lpFilter=v;continue;}
     var col=parseInt(sels[i].getAttribute('data-col'));
     tf.push({col:col,val:v.toUpperCase()});
   }
@@ -1380,6 +1401,10 @@ function applyAll(){
       else if(trendFilter==='STABLE'&&t!=='stable'){pass=false;}
       else if(trendFilter==='NOSALE'&&t!=='nosale'){pass=false;}
     }
+    if(!pass)continue;
+    if(hsFilter){var rP=parseFloat(r[PRICE_R_COL]),wP=parseFloat(r[PRICE_W_COL]);if(isNaN(rP)||isNaN(wP)||rP<=0||wP<=0||rP<wP*1.05){pass=false;}}
+    if(!pass)continue;
+    if(lpFilter){var rP2=parseFloat(r[PRICE_R_COL]),wP2=parseFloat(r[PRICE_W_COL]);if(isNaN(rP2)||isNaN(wP2)||rP2<=0||wP2<=0||rP2>wP2*0.95){pass=false;}}
     if(!pass)continue;
     for(var f=0;f<exactFilters.length;f++){
       var rv=Number(r[exactFilters[f].col]);
