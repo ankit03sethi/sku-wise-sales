@@ -146,17 +146,21 @@ td a:hover{text-decoration:underline;color:#39ff14}
 <div class="section-title">SALES</div>
 <div class="cards" id="salesCards"></div>
 
-<!-- CARDS ROW 2: STATUS -->
+<!-- CARDS ROW 2: TREND -->
+<div class="section-title">SALES TREND</div>
+<div class="cards" id="trendCards"></div>
+
+<!-- CARDS ROW 3: STATUS -->
 <div class="section-title">STATUS</div>
 <div class="cards" id="statusCards"></div>
 
-<!-- CARDS ROW 3: ACTION -->
+<!-- CARDS ROW 4: DAILY SALES LOSS -->
+<div class="section-title">DAILY SALES LOSS</div>
+<div class="cards" id="salesLossCards"></div>
+
+<!-- CARDS ROW 5: ACTION -->
 <div class="section-title">ACTION REQUIRED</div>
 <div class="cards" id="actionCards"></div>
-
-<!-- CARDS ROW 4: TREND -->
-<div class="section-title">SALES TREND</div>
-<div class="cards" id="trendCards"></div>
 
 <!-- FILTERS -->
 <div class="fbox">
@@ -397,11 +401,13 @@ function renderCards(){
   sth+=mkcard('Active',fmt(filterByType('active',data).length),'g','active');
   sth+=mkcard('Inactive',fmt(filterByType('inactive',data).length),'r','inactive');
   sth+=mkcard('Out of Stock',fmt(filterByType('outofstock',data).length),'r','outofstock');
+  document.getElementById('statusCards').innerHTML=sth;
+
   var slData=filterByType('salesloss',data);var slTotal=0;var ci2=getSalesIndexes();
   for(var i=0;i<slData.length;i++)slTotal+=Number(slData[i][ci2.day60])||0;
   var dailyLoss=Math.round(slTotal/60);
-  sth+='<div class="cd r" onclick="openSalesLoss()"><div class="lb">Daily Sales Loss</div><div class="vl">'+fmt(dailyLoss)+'</div></div>';
-  document.getElementById('statusCards').innerHTML=sth;
+  var slh='<div class="cd r" onclick="openSalesLoss()"><div class="lb">Daily Sales Loss</div><div class="vl">'+fmt(dailyLoss)+'</div></div>';
+  document.getElementById('salesLossCards').innerHTML=slh;
 
   var ntoData=filterByType('needopen',data);
   var ntcData=filterByType('needclose',data);
