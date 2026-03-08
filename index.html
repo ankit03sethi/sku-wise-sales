@@ -233,6 +233,7 @@ td a:hover{text-decoration:underline;color:#39ff14}
 <script>
 var API_URL='https://script.google.com/macros/s/AKfycbx7ov2e4VCcZ6Hv7thsszwNzGD2-RdeB5WUBGmAmXMsl_S4xGLmL-WQdiO9YBs1gMxjgA/exec';
 var ALL_DATA=[],HEADERS=[],FILTERED=[],SORT_COL=-1,SORT_DIR=1,PAGE=0,PER_PAGE=100;
+var MISSING_UNIQUES=[];
 var STOCK_COL=12,ACTIVE_COL=13,PLATFORM_COL=1,COMPANY_COL=2;
 var CAT_COL=5,SUBCAT_COL=6,PRODUCT_COL=8,SKU_NAME_COL=9;
 var PRICE_R_COL=17,PRICE_W_COL=22;
@@ -295,6 +296,7 @@ function onDataLoaded(d){
   var rawRows=d.rows||[];var cleanRows=[];
   for(var i=0;i<rawRows.length;i++){if(rawRows[i][0]&&String(rawRows[i][0]).trim()!=='')cleanRows.push(rawRows[i]);}
   ALL_DATA=cleanRows;HEADERS=d.headers||[];
+  MISSING_UNIQUES=d.missingUniques||[];
   detectRatingCols();detectNumericCols();collectNumericUniqueVals();detectStockInPlatCol();
   document.getElementById('loader').style.display='none';
   document.getElementById('app').style.display='block';
@@ -331,6 +333,7 @@ function softRefresh(){
         var rawRows=d.rows||[];var cleanRows=[];
         for(var i=0;i<rawRows.length;i++){if(rawRows[i][0]&&String(rawRows[i][0]).trim()!=='')cleanRows.push(rawRows[i]);}
         ALL_DATA=cleanRows;HEADERS=d.headers||[];
+        MISSING_UNIQUES=d.missingUniques||[];
         detectRatingCols();detectNumericCols();collectNumericUniqueVals();detectStockInPlatCol();
         document.getElementById('lastUp').textContent='Updated: '+new Date().toLocaleString();
         var scrollY=window.scrollY;
@@ -485,6 +488,7 @@ function renderCards(){
   ah+=mkcard('Need To Activate',fmt(iisData.length),'o','inactiveInStock');
   ah+=mkcard('High Shipping',fmt(filterByType('highshipping',data).length),'r','highshipping');
   ah+=mkcard('Low Price',fmt(filterByType('lowprice',data).length),'pk','lowprice');
+  ah+='<div class="cd o" onclick="openUnknownSkuModal()" style="cursor:pointer"><div class="lb">Unknown SKU</div><div class="vl">'+fmt(MISSING_UNIQUES.length)+'</div></div>';
   document.getElementById('actionCards').innerHTML=ah;
 
   var th='';
@@ -527,6 +531,38 @@ function openDrill(type,label){
 function closeModal(){
   document.getElementById('modalOverlay').className='modal-overlay';
   document.body.style.overflow='';SL={};
+}
+function openUnknownSkuModal(){
+  var h='<div style="padding:10px">';
+  h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">';
+  h+='<input id="unknownSkuSearch" placeholder="Search unknown SKUs..." oninput="filterUnknownSkuList()" style="background:#0a0f1e;color:#eee;border:1px solid #39ff14;border-radius:6px;padding:6px 12px;font-size:12px;flex:1;outline:none">';
+  h+='<span style="color:#ff9800;font-size:13px;font-weight:700">Total: '+MISSING_UNIQUES.length+'</span>';
+  h+='</div>';
+  h+='<div id="unknownSkuListWrap" style="max-height:60vh;overflow-y:auto">';
+  h+=buildUnknownSkuList(MISSING_UNIQUES);
+  h+='</div></div>';
+  document.getElementById('modalTitle').textContent='Unknown SKU - Missing in File';
+  document.getElementById('modalNav').style.display='none';
+  document.getElementById('modalContent').innerHTML=h;
+  document.getElementById('modalOverlay').className='modal-overlay show';
+  document.body.style.overflow='hidden';
+}
+function buildUnknownSkuList(items){
+  var h='<div class="drill-grid">';
+  for(var i=0;i<items.length;i++){
+    h+='<div class="drill-item" style="border-left-color:#ff9800;background:#1a1400;cursor:default">';
+    h+='<div class="di-name" style="color:#eee;font-size:11px">'+items[i]+'</div></div>';
+  }
+  h+='</div>';
+  return h;
+}
+function filterUnknownSkuList(){
+  var q=document.getElementById('unknownSkuSearch').value.trim().toUpperCase();
+  var filtered=[];
+  for(var i=0;i<MISSING_UNIQUES.length;i++){
+    if(!q||MISSING_UNIQUES[i].toUpperCase().indexOf(q)>=0)filtered.push(MISSING_UNIQUES[i]);
+  }
+  document.getElementById('unknownSkuListWrap').innerHTML=buildUnknownSkuList(filtered);
 }
 function modalGoBack(){
   // Handle Sales Loss drill-down back navigation
