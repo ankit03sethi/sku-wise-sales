@@ -229,6 +229,7 @@ var API_URL='https://script.google.com/macros/s/AKfycbx7ov2e4VCcZ6Hv7thsszwNzGD2
 var ALL_DATA=[],HEADERS=[],FILTERED=[],SORT_COL=-1,SORT_DIR=1,PAGE=0,PER_PAGE=100;
 var STOCK_COL=12,ACTIVE_COL=13,PLATFORM_COL=1,COMPANY_COL=2;
 var CAT_COL=5,SUBCAT_COL=6,PRODUCT_COL=8,SKU_NAME_COL=9;
+var PRICE_R_COL=17,PRICE_W_COL=22;
 var SORTABLE_FROM=15;
 var CHS={};
 var RATING_COLS=[];
@@ -372,6 +373,8 @@ function filterByType(type,dataset){
       case 'downtrend':if(getTrend(r)==='downtrend')result.push(r);break;
       case 'stable':if(getTrend(r)==='stable')result.push(r);break;
       case 'nosale':if(getTrend(r)==='nosale')result.push(r);break;
+      case 'highshipping':{var rP=parseFloat(r[PRICE_R_COL]),wP=parseFloat(r[PRICE_W_COL]);if(!isNaN(rP)&&!isNaN(wP)&&rP>0&&wP>0&&rP>=wP*1.05)result.push(r);break;}
+      case 'lowprice':{var rP2=parseFloat(r[PRICE_R_COL]),wP2=parseFloat(r[PRICE_W_COL]);if(!isNaN(rP2)&&!isNaN(wP2)&&rP2>0&&wP2>0&&rP2<=wP2*0.95)result.push(r);break;}
       case 'salesloss':if(stock==='OUT OF STOCK'&&isActiveValue(r[ACTIVE_COL]))result.push(r);break;
       case 'totalloss':{var added=false;
         if(stock==='OUT OF STOCK'&&isActiveValue(r[ACTIVE_COL])){result.push(r);added=true;}
@@ -438,6 +441,8 @@ function renderCards(){
   ah+=mkcard('Need To Open',fmt(ntoData.length),'pk','needopen');
   ah+=mkcard('Need To Close',fmt(ntcData.length),'r','needclose');
   ah+=mkcard('Need To Activate',fmt(iisData.length),'o','inactiveInStock');
+  ah+=mkcard('High Shipping',fmt(filterByType('highshipping',data).length),'r','highshipping');
+  ah+=mkcard('Low Price',fmt(filterByType('lowprice',data).length),'pk','lowprice');
   document.getElementById('actionCards').innerHTML=ah;
 
   var th='';
