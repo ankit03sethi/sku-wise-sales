@@ -403,10 +403,23 @@ function renderCards(){
   sth+=mkcard('Out of Stock',fmt(filterByType('outofstock',data).length),'r','outofstock');
   document.getElementById('statusCards').innerHTML=sth;
 
-  var slData=filterByType('salesloss',data);var slTotal=0;var ci2=getSalesIndexes();
+  var ci2=getSalesIndexes();
+  var ntoLossData=filterByType('needopen',data);var ntoLossTotal=0;
+  for(var i=0;i<ntoLossData.length;i++)ntoLossTotal+=Number(ntoLossData[i][ci2.day60])||0;
+  var ntoLoss=Math.round(ntoLossTotal/60);
+
+  var slData=filterByType('salesloss',data);var slTotal=0;
   for(var i=0;i<slData.length;i++)slTotal+=Number(slData[i][ci2.day60])||0;
   var dailyLoss=Math.round(slTotal/60);
-  var slh='<div class="cd r" onclick="openSalesLoss()"><div class="lb">Daily Sales Loss</div><div class="vl">'+fmt(dailyLoss)+'</div></div>';
+
+  var ntaLossData=filterByType('inactiveInStock',data);var ntaLossTotal=0;
+  for(var i=0;i<ntaLossData.length;i++)ntaLossTotal+=Number(ntaLossData[i][ci2.day60])||0;
+  var ntaLoss=Math.round(ntaLossTotal/60);
+
+  var slh='';
+  slh+='<div class="cd pk" onclick="openSalesLossType(\'needopen\',\'Need to Open Loss\')"><div class="lb">Need to Open Loss</div><div class="vl">'+fmt(ntoLoss)+'</div></div>';
+  slh+='<div class="cd r" onclick="openSalesLossType(\'salesloss\',\'Daily Sales Loss\')"><div class="lb">Daily Sales Loss</div><div class="vl">'+fmt(dailyLoss)+'</div></div>';
+  slh+='<div class="cd o" onclick="openSalesLossType(\'inactiveInStock\',\'Need to Activate Loss\')"><div class="lb">Need to Activate Loss</div><div class="vl">'+fmt(ntaLoss)+'</div></div>';
   document.getElementById('salesLossCards').innerHTML=slh;
 
   var ntoData=filterByType('needopen',data);
@@ -785,17 +798,18 @@ function slTotalLoss(data){
   for(var i=0;i<data.length;i++)t+=((Number(data[i][ci.day60])||0)/60);
   return Math.round(t);
 }
-function openSalesLoss(){
-  var data=filterByType('salesloss',FILTERED);
-  SL={level:1,baseData:data,catData:[],subcatData:[],prodData:[],skuData:[],skuFiltered:[],cat:'',subcat:'',prod:'',sku:'',sortCol:-1,sortDir:1};
-  document.getElementById('modalTitle').textContent='Daily Sales Loss - Categories';
+function openSalesLossType(filterType,title){
+  var data=filterByType(filterType,FILTERED);
+  SL={level:1,title:title,baseData:data,catData:[],subcatData:[],prodData:[],skuData:[],skuFiltered:[],cat:'',subcat:'',prod:'',sku:'',sortCol:-1,sortDir:1};
+  document.getElementById('modalTitle').textContent=title+' - Categories';
   document.getElementById('modalNav').style.display='none';
   renderSLCategories();
   document.getElementById('modalOverlay').className='modal-overlay show';
   document.body.style.overflow='hidden';
 }
 function slBread(){
-  var parts=['<span style="cursor:pointer;color:#4fc3f7" onclick="slGoTo(0)">Daily Sales Loss</span>'];
+  var t=SL.title||'Daily Sales Loss';
+  var parts=['<span style="cursor:pointer;color:#4fc3f7" onclick="slGoTo(0)">'+t+'</span>'];
   if(SL.cat)parts.push('<span style="cursor:pointer;color:#4fc3f7" onclick="slGoTo(1)">'+SL.cat+'</span>');
   if(SL.subcat)parts.push('<span style="cursor:pointer;color:#4fc3f7" onclick="slGoTo(2)">'+SL.subcat+'</span>');
   if(SL.prod)parts.push('<span style="cursor:pointer;color:#4fc3f7" onclick="slGoTo(3)">'+SL.prod+'</span>');
@@ -803,10 +817,11 @@ function slBread(){
   document.getElementById('modalBread').innerHTML=parts.join(' &rarr; ');
 }
 function slGoTo(level){
-  if(level===0){SL.level=1;SL.cat='';SL.subcat='';SL.prod='';SL.sku='';document.getElementById('modalTitle').textContent='Daily Sales Loss - Categories';document.getElementById('modalNav').style.display='none';renderSLCategories();}
-  else if(level===1){SL.level=2;SL.subcat='';SL.prod='';SL.sku='';document.getElementById('modalTitle').textContent='Daily Sales Loss - '+SL.cat+' - Sub Categories';document.getElementById('modalNav').style.display='flex';slBread();renderSLSubcats();}
-  else if(level===2){SL.level=3;SL.prod='';SL.sku='';document.getElementById('modalTitle').textContent='Daily Sales Loss - '+SL.subcat+' - Products';document.getElementById('modalNav').style.display='flex';slBread();renderSLProducts();}
-  else if(level===3){SL.level=4;SL.sku='';document.getElementById('modalTitle').textContent='Daily Sales Loss - '+SL.prod+' - SKUs';document.getElementById('modalNav').style.display='flex';slBread();renderSLSkus();}
+  var t=SL.title||'Daily Sales Loss';
+  if(level===0){SL.level=1;SL.cat='';SL.subcat='';SL.prod='';SL.sku='';document.getElementById('modalTitle').textContent=t+' - Categories';document.getElementById('modalNav').style.display='none';renderSLCategories();}
+  else if(level===1){SL.level=2;SL.subcat='';SL.prod='';SL.sku='';document.getElementById('modalTitle').textContent=t+' - '+SL.cat+' - Sub Categories';document.getElementById('modalNav').style.display='flex';slBread();renderSLSubcats();}
+  else if(level===2){SL.level=3;SL.prod='';SL.sku='';document.getElementById('modalTitle').textContent=t+' - '+SL.subcat+' - Products';document.getElementById('modalNav').style.display='flex';slBread();renderSLProducts();}
+  else if(level===3){SL.level=4;SL.sku='';document.getElementById('modalTitle').textContent=t+' - '+SL.prod+' - SKUs';document.getElementById('modalNav').style.display='flex';slBread();renderSLSkus();}
 }
 function slGrid(items,clickFn,allData){
   var colors=['#4fc3f7','#39ff14','#e09f3e','#a855f7','#dc2f02','#f72585','#7209b7','#3a0ca3'];
@@ -828,7 +843,7 @@ function slDrillCat(cat){
     document.getElementById('modalTitle').textContent='Daily Sales Loss - ALL Categories';document.getElementById('modalNav').style.display='flex';slBread();renderSLTable();return;}
   SL.level=2;SL.cat=cat;SL.catData=[];
   for(var i=0;i<SL.baseData.length;i++){if((String(SL.baseData[i][CAT_COL]||'').trim()||'(blank)')===cat)SL.catData.push(SL.baseData[i]);}
-  document.getElementById('modalTitle').textContent='Daily Sales Loss - '+cat+' - Sub Categories';
+  document.getElementById('modalTitle').textContent=(SL.title||'Daily Sales Loss')+' - '+cat+' - Sub Categories';
   document.getElementById('modalNav').style.display='flex';slBread();renderSLSubcats();
 }
 function renderSLSubcats(){
@@ -837,10 +852,10 @@ function renderSLSubcats(){
 }
 function slDrillSubcat(subcat){
   if(!subcat){SL.level=5;SL.subcat='ALL';SL.skuData=SL.catData.slice();SL.skuFiltered=SL.skuData.slice();SL.sortCol=-1;SL.sortDir=1;
-    document.getElementById('modalTitle').textContent='Daily Sales Loss - '+SL.cat+' - ALL Sub Categories';document.getElementById('modalNav').style.display='flex';slBread();renderSLTable();return;}
+    document.getElementById('modalTitle').textContent=(SL.title||'Daily Sales Loss')+' - '+SL.cat+' - ALL Sub Categories';document.getElementById('modalNav').style.display='flex';slBread();renderSLTable();return;}
   SL.level=3;SL.subcat=subcat;SL.subcatData=[];
   for(var i=0;i<SL.catData.length;i++){if((String(SL.catData[i][SUBCAT_COL]||'').trim()||'(blank)')===subcat)SL.subcatData.push(SL.catData[i]);}
-  document.getElementById('modalTitle').textContent='Daily Sales Loss - '+subcat+' - Products';
+  document.getElementById('modalTitle').textContent=(SL.title||'Daily Sales Loss')+' - '+subcat+' - Products';
   document.getElementById('modalNav').style.display='flex';slBread();renderSLProducts();
 }
 function renderSLProducts(){
@@ -849,10 +864,10 @@ function renderSLProducts(){
 }
 function slDrillProduct(prod){
   if(!prod){SL.level=5;SL.prod='ALL';SL.skuData=SL.subcatData.slice();SL.skuFiltered=SL.skuData.slice();SL.sortCol=-1;SL.sortDir=1;
-    document.getElementById('modalTitle').textContent='Daily Sales Loss - '+SL.subcat+' - ALL Products';document.getElementById('modalNav').style.display='flex';slBread();renderSLTable();return;}
+    document.getElementById('modalTitle').textContent=(SL.title||'Daily Sales Loss')+' - '+SL.subcat+' - ALL Products';document.getElementById('modalNav').style.display='flex';slBread();renderSLTable();return;}
   SL.level=4;SL.prod=prod;SL.prodData=[];
   for(var i=0;i<SL.subcatData.length;i++){if((String(SL.subcatData[i][PRODUCT_COL]||'').trim()||'(blank)')===prod)SL.prodData.push(SL.subcatData[i]);}
-  document.getElementById('modalTitle').textContent='Daily Sales Loss - '+prod+' - SKUs';
+  document.getElementById('modalTitle').textContent=(SL.title||'Daily Sales Loss')+' - '+prod+' - SKUs';
   document.getElementById('modalNav').style.display='flex';slBread();renderSLSkus();
 }
 function renderSLSkus(){
@@ -861,11 +876,11 @@ function renderSLSkus(){
 }
 function slDrillSku(sku){
   if(!sku){SL.level=5;SL.sku='ALL';SL.skuData=SL.prodData.slice();SL.skuFiltered=SL.skuData.slice();SL.sortCol=-1;SL.sortDir=1;
-    document.getElementById('modalTitle').textContent='Daily Sales Loss - '+SL.prod+' - ALL SKUs';document.getElementById('modalNav').style.display='flex';slBread();renderSLTable();return;}
+    document.getElementById('modalTitle').textContent=(SL.title||'Daily Sales Loss')+' - '+SL.prod+' - ALL SKUs';document.getElementById('modalNav').style.display='flex';slBread();renderSLTable();return;}
   SL.level=5;SL.sku=sku;SL.skuData=[];
   for(var i=0;i<SL.prodData.length;i++){if((String(SL.prodData[i][SKU_NAME_COL]||'').trim()||'(blank)')===sku)SL.skuData.push(SL.prodData[i]);}
   SL.skuFiltered=SL.skuData.slice();SL.sortCol=-1;SL.sortDir=1;
-  document.getElementById('modalTitle').textContent='Daily Sales Loss - '+sku;
+  document.getElementById('modalTitle').textContent=(SL.title||'Daily Sales Loss')+' - '+sku;
   document.getElementById('modalNav').style.display='flex';slBread();renderSLTable();
 }
 function renderSLTable(){
@@ -935,7 +950,7 @@ function downloadSLCSV(){
   for(var r=0;r<data.length;r++){var row=[];for(var c=0;c<data[r].length;c++){row.push('"'+String(data[r][c]===null||data[r][c]===undefined?'':data[r][c]).replace(/"/g,'""')+'"');}csv.push(row.join(','));}
   var blob=new Blob([csv.join('\n')],{type:'text/csv;charset=utf-8;'});
   var link=document.createElement('a');link.href=URL.createObjectURL(blob);
-  link.download='DailySalesLoss_'+new Date().toISOString().slice(0,10)+'.csv';
+  link.download=(SL.title||'DailySalesLoss').replace(/\s+/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.csv';
   link.click();URL.revokeObjectURL(link.href);
 }
 
