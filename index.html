@@ -327,9 +327,9 @@ function getTrend(row){
 }
 function getTrendBgColor(trend){
   switch(trend){
-    case 'uptrend':return 'rgba(0,255,65,0.15)';
-    case 'downtrend':return 'rgba(255,30,30,0.15)';
-    case 'stable':return 'rgba(255,230,0,0.12)';
+    case 'uptrend':return 'rgba(0,255,65,0.3)';
+    case 'downtrend':return 'rgba(255,20,20,0.3)';
+    case 'stable':return 'rgba(255,255,0,0.25)';
     default:return '';
   }
 }
@@ -382,12 +382,12 @@ function renderCards(){
     d7+=Number(data[i][ci.day7])||0;d15+=Number(data[i][ci.day15])||0;d30+=Number(data[i][ci.day30])||0;d60+=Number(data[i][ci.day60])||0;
   }
   var sh='';
-  sh+=mkcard('Today Avg/Day',fmt(Math.round(tdy/1)),'g','today');
-  sh+=mkcard('3-Day Avg/Day',fmt(Math.round(d3/3)),'g','day3');
-  sh+=mkcard('7-Day Avg/Day',fmt(Math.round(d7/7)),'o','day7');
-  sh+=mkcard('15-Day Avg/Day',fmt(Math.round(d15/15)),'o','day15');
-  sh+=mkcard('30-Day Avg/Day',fmt(Math.round(d30/30)),'p','day30');
-  sh+=mkcard('60-Day Avg/Day',fmt(Math.round(d60/60)),'pk','day60');
+  sh+=mkcard('Today',fmt(Math.round(tdy)),'g','today');
+  sh+=mkcard('3-Day',fmt(Math.round(d3)),'g','day3');
+  sh+=mkcard('7-Day',fmt(Math.round(d7)),'o','day7');
+  sh+=mkcard('15-Day',fmt(Math.round(d15)),'o','day15');
+  sh+=mkcard('30-Day',fmt(Math.round(d30)),'p','day30');
+  sh+=mkcard('60-Day',fmt(Math.round(d60)),'pk','day60');
   document.getElementById('salesCards').innerHTML=sh;
 
   var sth='';
@@ -1198,7 +1198,7 @@ function renderCharts(){
     if(pl){if(!platMap[pl])platMap[pl]=0;platMap[pl]+=Number(r[ci.day30])||0;}if(!stockMap[st])stockMap[st]=0;stockMap[st]++;
     if(isActiveValue(r[ACTIVE_COL]))actCount++;else inactCount++;
   }
-  dc('ch1');CHS.ch1=new Chart(document.getElementById('ch1'),{type:'bar',data:{labels:['60-Day Avg','30-Day Avg','15-Day Avg','7-Day Avg','3-Day Avg','Today'],datasets:[{data:[Math.round(d60/60),Math.round(d30/30),Math.round(d15/15),Math.round(d7/7),Math.round(d3/3),Math.round(tdy/1)],backgroundColor:['#f72585','#dc2f02','#a855f7','#e09f3e','#4fc3f7','#39ff14'],borderRadius:5}]},options:bOpts()});
+  dc('ch1');CHS.ch1=new Chart(document.getElementById('ch1'),{type:'bar',data:{labels:['60-Day','30-Day','15-Day','7-Day','3-Day','Today'],datasets:[{data:[Math.round(d60),Math.round(d30),Math.round(d15),Math.round(d7),Math.round(d3),Math.round(tdy)],backgroundColor:['#f72585','#dc2f02','#a855f7','#e09f3e','#4fc3f7','#39ff14'],borderRadius:5}]},options:bOpts()});
   var sl=[],sv=[],sc=['#39ff14','#dc2f02','#e09f3e','#4fc3f7','#a855f7'];for(var k in stockMap){sl.push(k||'BLANK');sv.push(stockMap[k]);}
   dc('ch2');CHS.ch2=new Chart(document.getElementById('ch2'),{type:'doughnut',data:{labels:sl,datasets:[{data:sv,backgroundColor:sc.slice(0,sl.length),borderWidth:0}]},options:pOpts()});
   var platArr=[];for(var k in platMap)platArr.push({n:k,v:platMap[k]});platArr.sort(function(a,b){return b.v-a.v;});
@@ -1260,11 +1260,11 @@ function getSalesDivisor(colIdx){
   if(colIdx===ci.day60)return 60;
   return 0;
 }
-function displayHeader(i){var h=HEADERS[i];if(getSalesDivisor(i)>0)return h+' <span style="font-size:9px;opacity:0.7">(Avg/Day)</span>';return h;}
+function displayHeader(i){return HEADERS[i];}
 function formatCellValue(val,j){
   var cc='',ct='';
   var divisor=getSalesDivisor(j);
-  if(divisor>0){var n=parseFloat(val)||0;var avg=n/divisor;ct=avg%1===0?String(avg):avg.toFixed(1);if(avg===0){cc=' class="zero"';}return '<td'+cc+'>'+ct+'</td>';}
+  if(divisor>0){var n=parseFloat(val)||0;ct=String(n);if(n===0){cc=' class="zero"';}return '<td'+cc+'>'+ct+'</td>';}
   if(j===STOCK_COL){var su=String(val||'').trim().toUpperCase();if(su==='IN STOCK'){cc=' style="color:#39ff14;font-weight:700"';ct='IN STOCK';}else{cc=' style="color:#ff4444;font-weight:700"';ct=val||'';}}
   else if(STOCK_IN_PLAT_COL>=0&&j===STOCK_IN_PLAT_COL){var sv=String(val===null||val===undefined?'':val).trim();var n=parseFloat(sv);if(!isNaN(n)&&n>0){cc=' style="color:#39ff14;font-weight:700"';ct=sv;}else{cc=' style="color:#ff4444;font-weight:700"';ct=sv===''?'0':sv;}}
   else if(j===ACTIVE_COL&&(STOCK_IN_PLAT_COL<0||j!==STOCK_IN_PLAT_COL)){ct=isActiveValue(val)?'<span class="badge bg">'+val+'</span>':'<span class="badge br">'+(val===''||val===null||val===undefined?'BLANK':val)+'</span>';}
